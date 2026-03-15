@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #000000;
+  --bg-surface: #0a0a0a;
+  --accent-primary: #3b82f6; 
+  --accent-secondary: #8b5cf6;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --border-primary: #1f1f1f;
+  --header-bg: #111111;
+}
+
+/* Custom utility classes or base styles can go here */
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+#root {
+  width: 100%;
+}
