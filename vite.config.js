@@ -26,8 +26,14 @@ const executeCodePlugin = () => ({
         server.ws.send('terminal:output', { data: data.toString() });
       });
 
-      proc.on('close', (code) => {
-        server.ws.send('terminal:exit', { code });
+      proc.on('close', (code, signal) => {
+        // If signal is present, the process was killed manually (e.g. by us)
+        if (signal) {
+            server.ws.send('terminal:output', { data: `\nProcess terminated by signal: ${signal}` });
+        } else {
+            server.ws.send('terminal:exit', { code });
+        }
+        
         filesToCleanup.forEach(f => {
           try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch (e) {}
         });
@@ -179,7 +185,21 @@ const executeCodePlugin = () => ({
           }
           try {
             const { code, language } = JSON.parse(body);
-            const prompt = `Act as an algorithm visualizer engine. Read this ${language} sorting algorithm code.\n\nCode:\n${code}\n\nTrace the execution of this code on the initial array: [50, 20, 80, 10].\nReturn strictly a JSON array of arrays, representing the state of the array at each step (swap or comparison). Each element must be { "id": number, "value": number }. Keep the same id for the same value so they animate nicely.\nExample output:\n[ [{"id":1,"value":50},{"id":2,"value":20},{"id":3,"value":80},{"id":4,"value":10}], [{"id":2,"value":20},{"id":1,"value":50},{"id":3,"value":80},{"id":4,"value":10}] ]\n\nOnly output valid JSON array with no markdown backticks.`;
+            const prompt = `Act as an algorithm visualizer engine. Read this ${language} algorithm code.\n\nCode:\n${code}\n\nTrace the execution of this code. 
+Return strictly a JSON array of objects. Each object represents a "frame" (a step in the algorithm like a swap, comparison, or loop update).
+Each frame must have:
+1. "array": The current state of the main array being sorted/processed. Formatted as an array of { "id": string, "value": number }.
+2. "variables": An object containing the values of important loop variables or indices (e.g., { "i": 0, "j": 1, "minIndex": 0 }).
+
+Example output:
+[
+  { 
+    "array": [{"id":"v0","value":50},{"id":"v1","value":20}], 
+    "variables": {"i":0, "j":1} 
+  }
+]
+
+Only output valid JSON array with no markdown backticks.`;
             const response = await ai.models.generateContent({
               model: 'gemini-2.5-flash',
               contents: prompt,

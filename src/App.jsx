@@ -8,15 +8,13 @@ import { useExecution } from './hooks/useExecution';
 import { useAiAnalysis } from './hooks/useAiAnalysis';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const DEFAULT_CODE = `// Welcome to the DSA Visualizer!
-// Write your array sorting algorithm here.
-
+const DEFAULT_CODE = {
+  javascript: `// JavaScript is visualized automatically!
 function bubbleSort(arr) {
   let n = arr.length;
   for (let i = 0; i < n - 1; i++) {
     for (let j = 0; j < n - i - 1; j++) {
       if (arr[j] > arr[j + 1]) {
-        // Swap
         let temp = arr[j];
         arr[j] = arr[j + 1];
         arr[j + 1] = temp;
@@ -25,13 +23,80 @@ function bubbleSort(arr) {
   }
   return arr;
 }
-
 let myArray = [50, 20, 80, 10];
 bubbleSort(myArray);
-`;
+`,
+  python: `# Python: Automatic AI Visualization!
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+    return arr
+
+# Use standard code - no extra print statements needed!
+my_array = [50, 20, 80, 10]
+sorted_array = bubble_sort(my_array)
+print("Sorted array:", sorted_array)
+`,
+  cpp: `// C++: Automatic AI Visualization!
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+void bubbleSort(vector<int>& arr) {
+    int n = arr.size();
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                swap(arr[j], arr[j + 1]);
+            }
+        }
+    }
+}
+
+int main() {
+    // Write standard C++ code - it visualizes automatically!
+    vector<int> myArray = {50, 20, 80, 10};
+    bubbleSort(myArray);
+    
+    cout << "Array sorted!" << endl;
+    return 0;
+}
+`,
+  java: `// Java: Automatic AI Visualization!
+import java.util.Arrays;
+
+public class Main {
+    public static void bubbleSort(int[] arr) {
+        int n = arr.length;
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        // Standard Java code - no extra helpers needed!
+        int[] myArray = {50, 20, 80, 10};
+        bubbleSort(myArray);
+        
+        System.out.println("Sorted: " + Arrays.toString(myArray));
+    }
+}
+`
+};
 
 function App() {
-  const [code, setCode] = useState(DEFAULT_CODE);
+  const [code, setCode] = useState(DEFAULT_CODE.javascript); // Initialize with JS default
   const [language, setLanguage] = useState('javascript');
   const { isRunning, output, stateList, executeCode, sendInput } = useExecution();
   const { isAnalyzing, analysisData, analyzeCode } = useAiAnalysis();
@@ -99,20 +164,32 @@ function App() {
   }, [stateList]);
 
   const handleVisualize = () => {
-    setIsAiAnalysisVisible(false); // mutually exclusive with visualizer side panel
+    setIsAiAnalysisVisible(false); // mutually exclusive
+    setIsRunnerVisible(false); // mutually exclusive
     setIsVisualizerVisible(true);
     executeCode(code, language, 'visualize');
   };
 
   const handleAiAnalysis = () => {
     setIsVisualizerVisible(false); // mutually exclusive
+    setIsRunnerVisible(false); // mutually exclusive
     setIsAiAnalysisVisible(true);
     analyzeCode(code, language);
   };
 
   const handleRun = () => {
+    setIsVisualizerVisible(false); // mutually exclusive
+    setIsAiAnalysisVisible(false); // mutually exclusive
     setIsRunnerVisible(true);
     executeCode(code, language, 'run');
+  };
+
+  const handleLanguageChange = (e) => {
+    const newLanguage = e.target.value;
+    setLanguage(newLanguage);
+    // We optionally want to swap the code out when changing language
+    // to give them the correct VISUALIZE example.
+    setCode(DEFAULT_CODE[newLanguage] || '');
   };
 
   const handleFileUpload = (file) => {

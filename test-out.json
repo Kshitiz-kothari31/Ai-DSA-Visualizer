@@ -1,0 +1,44 @@
+{
+  "varsToTrack": [
+    "arr",
+    "n",
+    "i",
+    "j",
+    "temp",
+    "myArray"
+  ],
+  "instrumented": "function bubbleSort(arr) {\n  var n = arr.length;\n  __report(3, {\n    arr: typeof arr !== \"undefined\" ? arr : undefined,\n    n: typeof n !== \"undefined\" ? n : undefined,\n    i: typeof i !== \"undefined\" ? i : undefined,\n    j: typeof j !== \"undefined\" ? j : undefined,\n    temp: typeof temp !== \"undefined\" ? temp : undefined,\n    myArray: typeof myArray !== \"undefined\" ? myArray : undefined\n  });\n  for (var i = 0; i < n - 1; i++) {\n    for (var j = 0; j < n - i - 1; j++) {\n      if (arr[j] > arr[j + 1]) {\n        var temp = arr[j];\n        __report(7, {\n          arr: typeof arr !== \"undefined\" ? arr : undefined,\n          n: typeof n !== \"undefined\" ? n : undefined,\n          i: typeof i !== \"undefined\" ? i : undefined,\n          j: typeof j !== \"undefined\" ? j : undefined,\n          temp: typeof temp !== \"undefined\" ? temp : undefined,\n          myArray: typeof myArray !== \"undefined\" ? myArray : undefined\n        });\n        arr[j] = arr[j + 1];\n        __report(8, {\n          arr: typeof arr !== \"undefined\" ? arr : undefined,\n          n: typeof n !== \"undefined\" ? n : undefined,\n          i: typeof i !== \"undefined\" ? i : undefined,\n          j: typeof j !== \"undefined\" ? j : undefined,\n          temp: typeof temp !== \"undefined\" ? temp : undefined,\n          myArray: typeof myArray !== \"undefined\" ? myArray : undefined\n        });\n        arr[j + 1] = temp;\n        __report(9, {\n          arr: typeof arr !== \"undefined\" ? arr : undefined,\n          n: typeof n !== \"undefined\" ? n : undefined,\n          i: typeof i !== \"undefined\" ? i : undefined,\n          j: typeof j !== \"undefined\" ? j : undefined,\n          temp: typeof temp !== \"undefined\" ? temp : undefined,\n          myArray: typeof myArray !== \"undefined\" ? myArray : undefined\n        });\n      }\n    }\n  }\n  return arr;\n}\nvar myArray = [50, 20, 80, 10];\n__report(15, {\n  arr: typeof arr !== \"undefined\" ? arr : undefined,\n  n: typeof n !== \"undefined\" ? n : undefined,\n  i: typeof i !== \"undefined\" ? i : undefined,\n  j: typeof j !== \"undefined\" ? j : undefined,\n  temp: typeof temp !== \"undefined\" ? temp : undefined,\n  myArray: typeof myArray !== \"undefined\" ? myArray : undefined\n});\nbubbleSort(myArray);\n",
+  "frameCount": 14,
+  "firstFrame": {
+    "line": 15,
+    "state": {
+      "myArray": [
+        50,
+        20,
+        80,
+        10
+      ]
+    }
+  },
+  "lastFrame": {
+    "line": 9,
+    "state": {
+      "arr": [
+        10,
+        20,
+        50,
+        80
+      ],
+      "n": 4,
+      "i": 2,
+      "j": 0,
+      "temp": 20,
+      "myArray": [
+        10,
+        20,
+        50,
+        80
+      ]
+    }
+  }
+}
