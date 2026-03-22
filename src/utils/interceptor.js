@@ -78,22 +78,18 @@ export function instrumentCode(code) {
     const transform = (node) => {
         if (!node || typeof node !== 'object') return;
 
-        // Flatten let/const to var
         if (node.type === 'VariableDeclaration') {
             node.kind = 'var';
         }
 
-        // Handle Loop Statements to capture indices
         if (node.type === 'ForStatement' || node.type === 'WhileStatement' || node.type === 'DoWhileStatement') {
             const body = node.body;
             if (body.type !== 'BlockStatement') {
                 node.body = { type: 'BlockStatement', body: [body] };
             }
-            // Inject report call at the VERY START of the loop body
             node.body.body.unshift(createReportCall(node));
         }
 
-        // Process bodies (Program, BlockStatement, etc.)
         if (Array.isArray(node.body)) {
             const newBody = [];
             for (let stmt of node.body) {
@@ -105,12 +101,11 @@ export function instrumentCode(code) {
             }
             node.body = newBody;
         } else {
-            // Transform sub-bodies (if/for/while/switch cases)
             const subBodies = ['body', 'consequent', 'alternate', 'init', 'update'];
             for (let key of subBodies) {
                 if (node[key] && typeof node[key] === 'object') {
                     if (Array.isArray(node[key])) {
-                         // already handled for Program/BlockStatement
+                         // handled
                     } else if (node[key].type && node[key].type !== 'BlockStatement' && key !== 'init' && key !== 'update') {
                         node[key] = {
                             type: 'BlockStatement',
@@ -135,7 +130,7 @@ export function instrumentCode(code) {
         if (node.type === 'ExpressionStatement') {
             const expr = node.expression;
             return expr.type === 'AssignmentExpression' || 
-                   expr.type === 'UpdateExpression' || // i++, j--
+                   expr.type === 'UpdateExpression' || 
                    (expr.type === 'CallExpression' && isMutation(expr));
         }
         return false;
@@ -154,21 +149,51 @@ export function instrumentCode(code) {
     return { instrumented: generate(ast), varsToTrack };
 }
 
-export function executeInstrumented({ instrumented }, initialState = {}) {
+/**
+ * NEW & UPDATED: Executes code asynchronously to handle interactive input
+ * @param {Function} onInputRequest - A function that returns a Promise resolving to user input
+ */
+export async function executeInstrumented({ instrumented }, initialState = {}, onInputRequest) {
     const reports = [];
+    const logs = []; 
     const MAX_FRAMES = 1000;
     let lastStateStr = '';
 
     const __report = (line, state) => {
         if (reports.length >= MAX_FRAMES) return;
-        const s = JSON.stringify(state);
+        
+        const stateWithLogs = { ...state, __logs: [...logs] };
+        const s = JSON.stringify(stateWithLogs);
+        
         if (s !== lastStateStr) {
             reports.push({ line, state: JSON.parse(s) });
             lastStateStr = s;
         }
     };
 
-    const runner = new Function('__report', `
+    const customConsole = {
+        log: (...args) => {
+            const output = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+            ).join(' ');
+            logs.push(output);
+        }
+    };
+
+    // The bridge for Python 'input()' or C++ 'cin'
+    const input = async (promptText) => {
+        if (promptText) customConsole.log(promptText);
+        if (!onInputRequest) return "";
+        
+        // This pauses the user's code until the user types in the Terminal
+        const userInput = await onInputRequest(); 
+        return userInput;
+    };
+
+    // Use AsyncFunction constructor to allow 'await' inside the executed code
+    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+
+    const runner = new AsyncFunction('__report', 'console', 'input', `
         ${Object.keys(initialState).map(k => `var ${k} = ${JSON.stringify(initialState[k])};`).join('\n')}
         try {
             ${instrumented}
@@ -178,9 +203,10 @@ export function executeInstrumented({ instrumented }, initialState = {}) {
     `);
 
     try {
-        runner(__report);
+        await runner(__report, customConsole, input);
     } catch (e) {
         console.error('Runner crash:', e);
     }
+
     return reports;
 }

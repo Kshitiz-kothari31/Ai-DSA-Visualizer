@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import EditorSection from './components/EditorSection';
 import RunnerSection from './components/RunnerSection';
@@ -9,323 +9,153 @@ import { useAiAnalysis } from './hooks/useAiAnalysis';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DEFAULT_CODE = {
-  javascript: `// JavaScript is visualized automatically!
-function bubbleSort(arr) {
-  let n = arr.length;
-  for (let i = 0; i < n - 1; i++) {
-    for (let j = 0; j < n - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        let temp = arr[j];
-        arr[j] = arr[j + 1];
-        arr[j + 1] = temp;
-      }
-    }
-  }
-  return arr;
-}
-let myArray = [50, 20, 80, 10];
-bubbleSort(myArray);
-`,
-  python: `# Python: Automatic AI Visualization!
-def bubble_sort(arr):
-    n = len(arr)
-    for i in range(n):
-        for j in range(0, n-i-1):
-            if arr[j] > arr[j+1]:
-                arr[j], arr[j+1] = arr[j+1], arr[j]
-    return arr
-
-# Use standard code - no extra print statements needed!
-my_array = [50, 20, 80, 10]
-sorted_array = bubble_sort(my_array)
-print("Sorted array:", sorted_array)
-`,
-  cpp: `// C++: Automatic AI Visualization!
-#include <iostream>
-#include <vector>
-#include <algorithm>
-
-using namespace std;
-
-void bubbleSort(vector<int>& arr) {
-    int n = arr.size();
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = 0; j < n - i - 1; j++) {
-            if (arr[j] > arr[j + 1]) {
-                swap(arr[j], arr[j + 1]);
-            }
-        }
-    }
-}
-
-int main() {
-    // Write standard C++ code - it visualizes automatically!
-    vector<int> myArray = {50, 20, 80, 10};
-    bubbleSort(myArray);
-    
-    cout << "Array sorted!" << endl;
-    return 0;
-}
-`,
-  java: `// Java: Automatic AI Visualization!
-import java.util.Arrays;
-
-public class Main {
-    public static void bubbleSort(int[] arr) {
-        int n = arr.length;
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = 0; j < n - i - 1; j++) {
-                if (arr[j] > arr[j + 1]) {
-                    int temp = arr[j];
-                    arr[j] = arr[j + 1];
-                    arr[j + 1] = temp;
-                }
-            }
-        }
-    }
-
-    public static void main(String[] args) {
-        // Standard Java code - no extra helpers needed!
-        int[] myArray = {50, 20, 80, 10};
-        bubbleSort(myArray);
-        
-        System.out.println("Sorted: " + Arrays.toString(myArray));
-    }
-}
-`
+  javascript: `function bubbleSort(arr) {\n  let n = arr.length;\n  for (let i = 0; i < n - 1; i++) {\n    for (let j = 0; j < n - i - 1; j++) {\n      if (arr[j] > arr[j + 1]) {\n        [arr[j], arr[j+1]] = [arr[j+1], arr[j]];\n      }\n    }\n  }\n}\nlet myArray = [50, 20, 80, 10];\nbubbleSort(myArray);`,
+  python: `def bubble_sort(arr):\n    n = len(arr)\n    for i in range(n):\n        for j in range(0, n-i-1):\n            if arr[j] > arr[j+1]:\n                arr[j], arr[j+1] = arr[j+1], arr[j]\n\nmy_array = [50, 20, 80, 10]\nbubble_sort(my_array)`,
+  cpp: `#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    vector<int> arr = {50, 20, 80, 10};\n    sort(arr.begin(), arr.end());\n    for(int x : arr) cout << x << " ";\n    return 0;\n}`
 };
 
 function App() {
-  const [code, setCode] = useState(DEFAULT_CODE.javascript); // Initialize with JS default
+  // --- State ---
   const [language, setLanguage] = useState('javascript');
-  const { isRunning, output, stateList, executeCode, sendInput } = useExecution();
+  const [code, setCode] = useState(DEFAULT_CODE.javascript);
+  
+  const { isRunning, output, stateList, executeCode, sendInput, clearOutput } = useExecution();
   const { isAnalyzing, analysisData, analyzeCode } = useAiAnalysis();
 
   const [isRunnerVisible, setIsRunnerVisible] = useState(false);
   const [isVisualizerVisible, setIsVisualizerVisible] = useState(false);
   const [isAiAnalysisVisible, setIsAiAnalysisVisible] = useState(false);
 
-  // For playing the animation step by step
   const [currentStateIndex, setCurrentStateIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playbackIntervalRef = useRef(null);
 
-  // Resize Panel State
-  const [sidePanelWidth, setSidePanelWidth] = useState(50); // percentage
-  const [bottomPanelHeight, setBottomPanelHeight] = useState(30); // percentage
-  const [isResizingSide, setIsResizingSide] = useState(false);
-  const [isResizingBottom, setIsResizingBottom] = useState(false);
+  // Layout states
+  const sidePanelWidth = 45; // Percentage
+  const bottomPanelHeight = 35; // Percentage
 
+  // --- Logic & Effects ---
+
+  // Handle Playback for Visualizer
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (isResizingSide) {
-        const newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
-        if (newWidth > 20 && newWidth < 80) {
-          setSidePanelWidth(newWidth);
-        }
-      }
-      if (isResizingBottom) {
-        const newHeight = ((window.innerHeight - e.clientY) / window.innerHeight) * 100;
-        if (newHeight > 15 && newHeight < 70) {
-          setBottomPanelHeight(newHeight);
-        }
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizingSide(false);
-      setIsResizingBottom(false);
-      document.body.style.cursor = 'default';
-    };
-
-    if (isResizingSide || isResizingBottom) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizingSide, isResizingBottom]);
-
-  useEffect(() => {
-    if (stateList.length > 0) {
-      setCurrentStateIndex(0);
-      let step = 0;
-      const interval = setInterval(() => {
-        if (step < stateList.length - 1) {
-          step++;
-          setCurrentStateIndex(step);
-        } else {
-          clearInterval(interval);
-        }
+    if (isPlaying && stateList?.length > 0) {
+      playbackIntervalRef.current = setInterval(() => {
+        setCurrentStateIndex((prev) => {
+          if (prev < stateList.length - 1) return prev + 1;
+          setIsPlaying(false);
+          return prev;
+        });
       }, 800);
-      return () => clearInterval(interval);
+    } else {
+      clearInterval(playbackIntervalRef.current);
+    }
+    return () => clearInterval(playbackIntervalRef.current);
+  }, [isPlaying, stateList]);
+
+  // Reset visualizer when new stateList arrives
+  useEffect(() => {
+    if (stateList?.length > 0) {
+      setCurrentStateIndex(0);
+      setIsPlaying(true);
     }
   }, [stateList]);
 
-  const handleVisualize = () => {
-    setIsAiAnalysisVisible(false); // mutually exclusive
-    setIsRunnerVisible(false); // mutually exclusive
+  // --- Handlers ---
+  const handleLanguageChange = (newLang) => {
+    setLanguage(newLang);
+    setCode(DEFAULT_CODE[newLang] || "");
+  };
+
+  const handleVisualize = useCallback(() => {
+    setIsAiAnalysisVisible(false);
+    setIsRunnerVisible(false);
     setIsVisualizerVisible(true);
     executeCode(code, language, 'visualize');
-  };
+  }, [code, language, executeCode]);
 
-  const handleAiAnalysis = () => {
-    setIsVisualizerVisible(false); // mutually exclusive
-    setIsRunnerVisible(false); // mutually exclusive
+  const handleRun = useCallback(() => {
+    setIsVisualizerVisible(false);
+    setIsAiAnalysisVisible(false);
+    setIsRunnerVisible(true);
+    if (clearOutput) clearOutput(); // Ensure fresh console
+    executeCode(code, language, 'run');
+  }, [code, language, executeCode, clearOutput]);
+
+  const handleAiAnalysis = useCallback(() => {
+    setIsVisualizerVisible(false);
+    setIsRunnerVisible(false);
     setIsAiAnalysisVisible(true);
     analyzeCode(code, language);
-  };
+  }, [code, language, analyzeCode]);
 
-  const handleRun = () => {
-    setIsVisualizerVisible(false); // mutually exclusive
-    setIsAiAnalysisVisible(false); // mutually exclusive
-    setIsRunnerVisible(true);
-    executeCode(code, language, 'run');
-  };
-
-  const handleLanguageChange = (e) => {
-    const newLanguage = e.target.value;
-    setLanguage(newLanguage);
-    // We optionally want to swap the code out when changing language
-    // to give them the correct VISUALIZE example.
-    setCode(DEFAULT_CODE[newLanguage] || '');
-  };
-
-  const handleFileUpload = (file) => {
-    if (!file) return;
-
-    const extension = file.name.split('.').pop().toLowerCase();
-    const languageMap = {
-      'js': 'javascript',
-      'mjs': 'javascript',
-      'cjs': 'javascript',
-      'py': 'python',
-      'pyw': 'python',
-      'cpp': 'cpp',
-      'cc': 'cpp',
-      'cxx': 'cpp',
-      'c': 'cpp',
-      'h': 'cpp',
-      'hpp': 'cpp',
-      'java': 'java'
-    };
-
-    const detectLanguageFromContent = (content) => {
-      if (content.includes('#include') || content.includes('using namespace')) return 'cpp';
-      if (content.includes('import ') && (content.includes('def ') || content.includes('print('))) return 'python';
-      if (content.includes('public class ') || content.includes('System.out.println')) return 'java';
-      if (content.includes('const ') || content.includes('let ') || content.includes('function ')) return 'javascript';
-      return null;
-    };
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target.result;
-        setCode(content);
-        
-        // Priority 1: Extension mapping
-        if (languageMap[extension]) {
-          setLanguage(languageMap[extension]);
-        } 
-        // Priority 2: Content heuristics (for .txt or unknown extensions)
-        else {
-          const detected = detectLanguageFromContent(content);
-          if (detected) setLanguage(detected);
-        }
-      } catch (err) {
-        console.error("Error processing file content:", err);
-      }
-    };
-    
-    reader.onerror = (err) => {
-      console.error("FileReader error:", err);
-    };
-
-    reader.readAsText(file);
-  };
+  // --- Render Helpers ---
+  const isRightPanelOpen = isVisualizerVisible || isAiAnalysisVisible;
 
   return (
-    <div className="h-screen w-screen flex flex-col font-sans bg-black text-white overflow-hidden">
-      <Navbar onVisualize={handleVisualize} onFileUpload={handleFileUpload} onAiAnalysis={handleAiAnalysis} />
+    <div className="h-screen w-screen flex flex-col font-sans bg-[#050505] text-white overflow-hidden">
+      <Navbar 
+        onVisualize={handleVisualize} 
+        onAiAnalysis={handleAiAnalysis}
+        onFileUpload={(fileCode) => setCode(fileCode)} 
+      />
 
-      {/* Main Layout Layer */}
-      <div className="flex-grow flex w-full h-[calc(100vh-65px)] overflow-hidden">
-
-        {/* Editor & Runner Column */}
-        <div
-          className="relative flex flex-col h-full border-[#1f1f1f] transition-all duration-300"
-          style={{ width: (isVisualizerVisible || isAiAnalysisVisible) ? `${100 - sidePanelWidth}%` : '100%' }}
+      <div className="flex-grow flex w-full overflow-hidden">
+        {/* Left Column: Editor & Terminal */}
+        <motion.div
+          layout
+          className="relative flex flex-col h-full border-r border-[#1f1f1f] transition-all duration-300 ease-in-out"
+          style={{ width: isRightPanelOpen ? `${100 - sidePanelWidth}%` : '100%' }}
         >
-
-          {/* Editor */}
-          <div
-            className="flex-grow w-full relative h-full"
-            style={{ paddingBottom: isRunnerVisible ? `${bottomPanelHeight}%` : '0' }}
-          >
+          <div className="flex-grow w-full relative h-full">
             <EditorSection
               code={code}
               language={language}
-              onLanguageChange={setLanguage}
+              onLanguageChange={handleLanguageChange}
               onChange={setCode}
               onRun={handleRun}
             />
           </div>
 
-          {/* Bottom Sliding Runner Panel */}
           <AnimatePresence>
             {isRunnerVisible && (
               <motion.div
-                initial={{ y: "100%", opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: "100%", opacity: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: 'spring', damping: 20, stiffness: 100 }}
                 style={{ height: `${bottomPanelHeight}%` }}
-                className="absolute bottom-0 left-0 right-0 min-h-[150px] border-t-2 border-[#3b82f6] shadow-[0_-10px_20px_rgba(59,130,246,0.1)] z-10 bg-[#0a0a0a]"
+                className="absolute bottom-0 left-0 right-0 border-t border-[#333] z-50 bg-[#0a0a0a] shadow-2xl"
               >
-                {/* Resize Handle for Bottom Panel */}
-                <div
-                  className="absolute top-0 left-0 right-0 h-1 cursor-row-resize hover:bg-[#3b82f6] transition-colors z-20"
-                  onMouseDown={() => {
-                    setIsResizingBottom(true);
-                    document.body.style.cursor = 'row-resize';
-                  }}
-                />
                 <RunnerSection 
                   output={output} 
                   isRunning={isRunning} 
-                  onInput={sendInput}
+                  onInput={sendInput} 
                   onClose={() => setIsRunnerVisible(false)} 
                 />
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
 
-        {/* Side Column (Visualizer or AI Analysis) */}
-        <AnimatePresence>
-          {(isVisualizerVisible || isAiAnalysisVisible) && (
+        {/* Right Column: Visualizer or AI */}
+        <AnimatePresence mode="wait">
+          {isRightPanelOpen && (
             <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: `${sidePanelWidth}%`, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="relative h-full bg-black overflow-hidden flex-shrink-0 flex"
+              initial={{ x: "100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "100%", opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ width: `${sidePanelWidth}%` }}
+              className="relative h-full bg-[#080808] border-l border-[#1f1f1f] overflow-hidden flex-shrink-0"
             >
-              {/* Resize Handle for Side Panel */}
-              <div
-                className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[#3b82f6] transition-colors z-20"
-                onMouseDown={() => {
-                  setIsResizingSide(true);
-                  document.body.style.cursor = 'col-resize';
-                }}
-              />
-              <div className="flex-grow h-full overflow-hidden">
+              <div className="h-full w-full">
                 {isVisualizerVisible ? (
                   <VisualizerSection
                     stateList={stateList}
                     currentStateIndex={currentStateIndex}
+                    setCurrentStateIndex={setCurrentStateIndex}
+                    isPlaying={isPlaying}
+                    setIsPlaying={setIsPlaying}
                     onClose={() => setIsVisualizerVisible(false)}
                   />
                 ) : (
