@@ -1,9 +1,6 @@
 import * as acorn from 'acorn';
 import { generate } from 'astring';
 
-/**
- * Instruments the user's code to capture state changes.
- */
 export function instrumentCode(code) {
     let ast;
     try {
@@ -14,23 +11,20 @@ export function instrumentCode(code) {
 
     const variableNames = new Set();
 
-    // Pass 1: Global discovery of variable names
+    // Pass 1: Global discovery of variable names (Improved)
     const discover = (node) => {
         if (!node || typeof node !== 'object') return;
         
         if (node.type === 'VariableDeclarator' && node.id.type === 'Identifier') {
             variableNames.add(node.id.name);
-        } else if ((node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression') && node.params) {
-            node.params.forEach(p => {
-                if (p.type === 'Identifier') variableNames.add(p.name);
-                else if (p.type === 'AssignmentPattern' && p.left.type === 'Identifier') variableNames.add(p.left.name);
-            });
         } else if (node.type === 'AssignmentExpression' && node.left.type === 'Identifier') {
             variableNames.add(node.left.name);
+        } else if (node.type === 'FunctionDeclaration' && node.id) {
+            variableNames.add(node.id.name);
         }
 
         for (let key in node) {
-            if (key === 'loc' || key === 'start' || key === 'end') continue;
+            if (['loc', 'start', 'end'].includes(key)) continue;
             const child = node[key];
             if (Array.isArray(child)) child.forEach(discover);
             else discover(child);
@@ -39,12 +33,14 @@ export function instrumentCode(code) {
     discover(ast);
 
     const varsToTrack = Array.from(variableNames).filter(v => 
-        !v.startsWith('__') && !['console', 'window', 'document', 'Math', 'JSON'].includes(v)
+        !v.startsWith('__') && !['console', 'window', 'document', 'Math', 'JSON', 'input'].includes(v)
     );
 
-    // Pass 2: Injection and flattening
+    // Pass 2: Injection (The "Report" generator)
     const createReportCall = (node) => {
         const line = getLineNumber(code, node.start);
+        
+        // Create an object where each key is the variable name and value is the variable itself
         const properties = varsToTrack.map(v => ({
             type: 'Property',
             key: { type: 'Identifier', name: v },
@@ -59,7 +55,8 @@ export function instrumentCode(code) {
                 consequent: { type: 'Identifier', name: v },
                 alternate: { type: 'Identifier', name: 'undefined' }
             },
-            kind: 'init'
+            kind: 'init',
+            shorthand: false
         }));
 
         return {
@@ -78,16 +75,9 @@ export function instrumentCode(code) {
     const transform = (node) => {
         if (!node || typeof node !== 'object') return;
 
+        // Force all declarations to 'var' so they are accessible in the same scope
         if (node.type === 'VariableDeclaration') {
             node.kind = 'var';
-        }
-
-        if (node.type === 'ForStatement' || node.type === 'WhileStatement' || node.type === 'DoWhileStatement') {
-            const body = node.body;
-            if (body.type !== 'BlockStatement') {
-                node.body = { type: 'BlockStatement', body: [body] };
-            }
-            node.body.body.unshift(createReportCall(node));
         }
 
         if (Array.isArray(node.body)) {
@@ -101,46 +91,27 @@ export function instrumentCode(code) {
             }
             node.body = newBody;
         } else {
-            const subBodies = ['body', 'consequent', 'alternate', 'init', 'update'];
-            for (let key of subBodies) {
-                if (node[key] && typeof node[key] === 'object') {
-                    if (Array.isArray(node[key])) {
-                         // handled
-                    } else if (node[key].type && node[key].type !== 'BlockStatement' && key !== 'init' && key !== 'update') {
-                        node[key] = {
-                            type: 'BlockStatement',
-                            body: [node[key]]
-                        };
-                    }
-                }
-            }
-
+            // Traverse children
             for (let key in node) {
-                if (key === 'loc' || key === 'start' || key === 'end' || key === 'body') continue;
+                if (['loc', 'start', 'end'].includes(key)) continue;
                 const child = node[key];
                 if (Array.isArray(child)) child.forEach(transform);
-                else transform(child);
+                else if (child && typeof child === 'object') transform(child);
             }
-            if (node.body && !Array.isArray(node.body)) transform(node.body);
         }
     };
 
     const shouldInstrument = (node) => {
-        if (node.type === 'VariableDeclaration') return true;
+        const types = ['VariableDeclaration', 'ExpressionStatement', 'ReturnStatement'];
+        if (!types.includes(node.type)) return false;
+        
         if (node.type === 'ExpressionStatement') {
             const expr = node.expression;
             return expr.type === 'AssignmentExpression' || 
                    expr.type === 'UpdateExpression' || 
-                   (expr.type === 'CallExpression' && isMutation(expr));
+                   (expr.type === 'CallExpression');
         }
-        return false;
-    };
-
-    const isMutation = (expr) => {
-        const mutations = ['push', 'pop', 'splice', 'reverse', 'sort', 'shift', 'unshift'];
-        return expr.callee.type === 'MemberExpression' &&
-               expr.callee.property.type === 'Identifier' &&
-               mutations.includes(expr.callee.property.name);
+        return true;
     };
 
     const getLineNumber = (c, pos) => c.substring(0, pos).split('\n').length;
@@ -149,20 +120,22 @@ export function instrumentCode(code) {
     return { instrumented: generate(ast), varsToTrack };
 }
 
-/**
- * NEW & UPDATED: Executes code asynchronously to handle interactive input
- * @param {Function} onInputRequest - A function that returns a Promise resolving to user input
- */
 export async function executeInstrumented({ instrumented }, initialState = {}, onInputRequest) {
     const reports = [];
     const logs = []; 
-    const MAX_FRAMES = 1000;
+    const MAX_FRAMES = 500;
     let lastStateStr = '';
 
     const __report = (line, state) => {
         if (reports.length >= MAX_FRAMES) return;
         
-        const stateWithLogs = { ...state, __logs: [...logs] };
+        // Filter out undefineds to keep the visualizer clean
+        const cleanState = {};
+        Object.entries(state).forEach(([k, v]) => {
+            if (v !== undefined) cleanState[k] = v;
+        });
+
+        const stateWithLogs = { variables: cleanState, __logs: [...logs] };
         const s = JSON.stringify(stateWithLogs);
         
         if (s !== lastStateStr) {
@@ -180,33 +153,23 @@ export async function executeInstrumented({ instrumented }, initialState = {}, o
         }
     };
 
-    // The bridge for Python 'input()' or C++ 'cin'
     const input = async (promptText) => {
         if (promptText) customConsole.log(promptText);
         if (!onInputRequest) return "";
-        
-        // This pauses the user's code until the user types in the Terminal
-        const userInput = await onInputRequest(); 
-        return userInput;
+        return await onInputRequest();
     };
 
-    // Use AsyncFunction constructor to allow 'await' inside the executed code
     const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
+    // We wrap the code in a function where __report is available in the scope
     const runner = new AsyncFunction('__report', 'console', 'input', `
-        ${Object.keys(initialState).map(k => `var ${k} = ${JSON.stringify(initialState[k])};`).join('\n')}
         try {
             ${instrumented}
         } catch (e) {
-            __report(0, { error: e.message });
+            console.log("Error during execution: " + e.message);
         }
     `);
 
-    try {
-        await runner(__report, customConsole, input);
-    } catch (e) {
-        console.error('Runner crash:', e);
-    }
-
+    await runner(__report, customConsole, input);
     return reports;
 }

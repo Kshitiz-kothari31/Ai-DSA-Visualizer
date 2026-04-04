@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, X, ChevronRight } from 'lucide-react';
 
-export default function RunnerSection({ output = [], isRunning, onInput, onClose }) {
+export default function RunnerSection({ output = [], isRunning, onInput, onShellCommand, onClose }) {
     const [inputValue, setInputValue] = useState('');
     const scrollRef = useRef(null);
 
@@ -13,7 +13,12 @@ export default function RunnerSection({ output = [], isRunning, onInput, onClose
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
-            onInput(inputValue);
+            if (inputValue.trim() === '') return;
+            if (isRunning) {
+                onInput(inputValue);
+            } else {
+                onShellCommand && onShellCommand(inputValue);
+            }
             setInputValue('');
         }
     };
@@ -37,7 +42,7 @@ export default function RunnerSection({ output = [], isRunning, onInput, onClose
                 className="flex-grow p-4 overflow-y-auto font-mono text-sm bg-black text-[#a1a1aa] selection:bg-[#3b82f6]/30"
             >
                 {output.length === 0 && !isRunning ? (
-                    <div className="text-gray-600 italic">No output yet. Click Run to see results.</div>
+                    <div className="text-gray-600 italic mb-2">Terminal ready. Type a command or run your code.</div>
                 ) : (
                     output.map((line, i) => (
                         <div key={i} className={`mb-1 ${line.startsWith('Error:') || line.includes('Process error') ? 'text-red-500 font-bold' : ''}`}>
@@ -47,20 +52,18 @@ export default function RunnerSection({ output = [], isRunning, onInput, onClose
                     ))
                 )}
                 
-                {isRunning && (
-                    <div className="mt-2 flex items-center space-x-2 text-[#3b82f6]">
-                        <ChevronRight className="w-4 h-4" />
-                        <input
-                            type="text"
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="flex-grow bg-transparent border-none outline-none text-white placeholder-gray-600 focus:ring-0"
-                            placeholder="Type input here and press Enter..."
-                            autoFocus
-                        />
-                    </div>
-                )}
+                <div className="mt-2 flex items-center space-x-2 text-[#3b82f6]">
+                    <ChevronRight className="w-4 h-4" />
+                    <input
+                        type="text"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="flex-grow bg-transparent border-none outline-none text-white placeholder-gray-600 focus:ring-0"
+                        placeholder={isRunning ? "Type input here and press Enter..." : "Type shell command (e.g. node script.js) and press Enter..."}
+                        autoFocus
+                    />
+                </div>
             </div>
         </div>
     );

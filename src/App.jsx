@@ -7,6 +7,7 @@ import AiAnalysisSection from './components/AiAnalysisSection';
 import { useExecution } from './hooks/useExecution';
 import { useAiAnalysis } from './hooks/useAiAnalysis';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Terminal } from 'lucide-react';
 
 const DEFAULT_CODE = {
   javascript: `function bubbleSort(arr) {\n  let n = arr.length;\n  for (let i = 0; i < n - 1; i++) {\n    for (let j = 0; j < n - i - 1; j++) {\n      if (arr[j] > arr[j + 1]) {\n        [arr[j], arr[j+1]] = [arr[j+1], arr[j]];\n      }\n    }\n  }\n}\nlet myArray = [50, 20, 80, 10];\nbubbleSort(myArray);`,
@@ -19,7 +20,7 @@ function App() {
   const [language, setLanguage] = useState('javascript');
   const [code, setCode] = useState(DEFAULT_CODE.javascript);
   
-  const { isRunning, output, stateList, executeCode, sendInput, clearOutput } = useExecution();
+  const { isRunning, output, stateList, executeCode, sendInput, clearOutput, executeShellCommand } = useExecution();
   const { isAnalyzing, analysisData, analyzeCode } = useAiAnalysis();
 
   const [isRunnerVisible, setIsRunnerVisible] = useState(false);
@@ -102,11 +103,10 @@ function App() {
       <div className="flex-grow flex w-full overflow-hidden">
         {/* Left Column: Editor & Terminal */}
         <motion.div
-          layout
           className="relative flex flex-col h-full border-r border-[#1f1f1f] transition-all duration-300 ease-in-out"
           style={{ width: isRightPanelOpen ? `${100 - sidePanelWidth}%` : '100%' }}
         >
-          <div className="flex-grow w-full relative h-full">
+          <div className="flex-grow w-full relative min-h-0">
             <EditorSection
               code={code}
               language={language}
@@ -119,17 +119,17 @@ function App() {
           <AnimatePresence>
             {isRunnerVisible && (
               <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-                style={{ height: `${bottomPanelHeight}%` }}
-                className="absolute bottom-0 left-0 right-0 border-t border-[#333] z-50 bg-[#0a0a0a] shadow-2xl"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: `${bottomPanelHeight}%`, opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 120 }}
+                className="w-full border-t border-[#333] z-50 bg-[#0a0a0a] overflow-hidden flex-shrink-0"
               >
                 <RunnerSection 
                   output={output} 
                   isRunning={isRunning} 
                   onInput={sendInput} 
+                  onShellCommand={executeShellCommand}
                   onClose={() => setIsRunnerVisible(false)} 
                 />
               </motion.div>
@@ -169,6 +169,17 @@ function App() {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Global Bottom Bar */}
+      <div className="h-8 bg-[#0a0a0a] border-t border-[#1f1f1f] flex items-center px-4 shrink-0 z-[60]">
+          <button 
+              onClick={() => setIsRunnerVisible(!isRunnerVisible)}
+              className={`flex items-center space-x-2 text-xs font-semibold transition-colors ${isRunnerVisible ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+              <Terminal className="w-3.5 h-3.5" />
+              <span>Terminal</span>
+          </button>
       </div>
     </div>
   );

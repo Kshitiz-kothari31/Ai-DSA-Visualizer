@@ -53,30 +53,46 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
 
                         {/* Performance Chart */}
                         <div className="bg-[#0a0a0a] p-4 rounded-lg shadow-lg border border-[#1f1f1f]">
-                            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 text-center">Theoretical Performance</h3>
+                            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 text-center">
+                                Theoretical Performance
+                            </h3>
                             <div className="h-[250px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart
-                                        data={analysisData.chartData}
+                                        data={analysisData.chartData} // This is the array from Python
                                         margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
                                     >
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f1f1f" />
-                                        <XAxis dataKey="inputSize" stroke="#4b5563" fontSize={10} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#4b5563" fontSize={10} tickLine={false} axisLine={false} />
+                                        {/* Changed dataKey to "n" */}
+                                        <XAxis 
+                                            dataKey="n" 
+                                            stroke="#4b5563" 
+                                            fontSize={10} 
+                                            tickLine={false} 
+                                            axisLine={false} 
+                                            label={{ value: 'Size (n)', position: 'insideBottom', offset: -2, fontSize: 10, fill: '#4b5563' }}
+                                        />
+                                        <YAxis 
+                                            stroke="#4b5563" 
+                                            fontSize={10} 
+                                            tickLine={false} 
+                                            axisLine={false} 
+                                        />
                                         <Tooltip 
-                                            contentStyle={{ backgroundColor: '#000', borderRadius: '8px', border: '1px solid #1f1f1f', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}
-                                            labelStyle={{ color: '#3b82f6', fontWeight: 'bold' }}
-                                            itemStyle={{ color: '#fff' }}
+                                            contentStyle={{ backgroundColor: '#000', borderRadius: '8px', border: '1px solid #1f1f1f' }}
+                                            itemStyle={{ color: '#3b82f6' }}
                                         />
                                         <Legend iconType="circle" />
+                                        {/* Changed dataKey to "time" */}
                                         <Line 
                                             type="monotone" 
-                                            dataKey="operations" 
-                                            name="Operations (Estimated)" 
+                                            dataKey="time" 
+                                            name="Estimated Steps" 
                                             stroke="#3b82f6" 
                                             strokeWidth={3} 
                                             dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#000' }}
                                             activeDot={{ r: 6 }} 
+                                            animationDuration={1500}
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>

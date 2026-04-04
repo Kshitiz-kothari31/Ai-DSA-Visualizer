@@ -7,7 +7,11 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
         if (file && onFileUpload) {
-            onFileUpload(file);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                onFileUpload(event.target.result);
+            };
+            reader.readAsText(file);
         }
         // reset input so the same file can be uploaded again
         if (fileInputRef.current) {

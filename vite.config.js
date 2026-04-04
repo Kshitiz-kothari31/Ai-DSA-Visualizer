@@ -100,6 +100,16 @@ const executeCodePlugin = () => ({
       }
     });
 
+    server.ws.on('terminal:execute-command', (data) => {
+      const { command } = data;
+      if (currentProcess) {
+        currentProcess.kill();
+      }
+
+      currentProcess = spawn(command, { shell: true, cwd: process.cwd() });
+      setupProcessListeners(currentProcess, server, []);
+    });
+
     server.middlewares.use(async (req, res, next) => {
       if (req.url === '/api/execute' && req.method === 'POST') {
         let body = '';
