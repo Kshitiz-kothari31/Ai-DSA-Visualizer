@@ -1,7 +1,9 @@
 import React, { useRef } from 'react';
-import { Play, Upload, Code2, Save, Bot } from 'lucide-react';
+import { Play, Upload, Code2, Save, Bot, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
+    const { logout } = useAuth();
     const fileInputRef = useRef(null);
 
     const handleFileChange = (e) => {
@@ -66,6 +68,14 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
                 >
                     <Bot className="w-4 h-4" />
                     <span>AI Analysis</span>
+                </button>
+                <div className="w-px h-6 bg-gray-700 mx-2"></div>
+                <button
+                    onClick={logout}
+                    title="Log Out"
+                    className="flex items-center justify-center bg-transparent border border-red-500/50 hover:bg-red-500/20 text-red-500 p-2 rounded-md transition-colors"
+                >
+                    <LogOut className="w-5 h-5" />
                 </button>
             </div>
         </nav>

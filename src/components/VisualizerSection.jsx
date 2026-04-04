@@ -1,154 +1,321 @@
-import React, { useId } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, SkipBack, SkipForward, X, Database, Share2, Zap } from 'lucide-react';
-// 1. IMPORT REACT-XARROWS
+import React from 'react';
+import { Play, Pause, SkipBack, SkipForward, X, Database, Zap } from 'lucide-react';
 import Xarrow, { Xwrapper } from 'react-xarrows';
 
-// --- Recursive DataNode with Arrow Logic ---
-const DataNode = ({ data, depth = 0 }) => {
-  const uniqueId = useId().replace(/:/g, "-");
-  const nodeId = `node-${uniqueId}`;
+// --- Type Checking Heuristics ---
+const isPrimitive = (val) => val === null || val === undefined || typeof val !== 'object';
+const isArray = (val) => Array.isArray(val);
+const getKeys = (val) => Object.keys(val).map(k => k.toLowerCase());
 
-  // 1. Safety check for recursion depth
-  if (depth > 6) return <div className="text-red-500 text-[10px]">Max Depth</div>;
+const isLinkedListNode = (val) => {
+    if (isArray(val) || isPrimitive(val)) return false;
+    const keys = getKeys(val);
+    return (keys.includes('val') || keys.includes('value') || keys.includes('data')) && 
+           (keys.includes('next') || keys.includes('prev'));
+};
 
-  // 2. Handle Null/Undefined
-  if (data === null || data === undefined) {
-    return <span className="text-zinc-600 font-mono text-xs italic">null</span>;
-  }
+const isTreeNode = (val) => {
+    if (isArray(val) || isPrimitive(val)) return false;
+    const keys = getKeys(val);
+    return (keys.includes('val') || keys.includes('value') || keys.includes('data')) && 
+           (keys.includes('left') || keys.includes('right'));
+};
 
-  // 3. Handle Primitives (Numbers, Strings)
-  if (typeof data !== 'object') {
+// --- Specialized DSA Viewers ---
+
+const PrimitiveViewer = ({ data }) => {
+    if (data === null || data === undefined) return <span className="text-zinc-500 font-mono text-sm italic">null</span>;
+    if (typeof data === 'boolean') return <span className="text-orange-400 font-mono text-sm">{String(data)}</span>;
+    if (typeof data === 'string') return <span className="text-green-400 font-mono text-sm">"{data}"</span>;
+    return <span className="text-yellow-400 font-mono font-bold text-sm bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20">{String(data)}</span>;
+};
+
+const ArrayViewer = ({ data, rootVariables }) => {
+    // Find variables that act as pointers (i.e., integers that match the index)
+    const pointersForIndex = (idx) => {
+        const pointers = [];
+        for (const [vName, vVal] of Object.entries(rootVariables)) {
+            if (isPrimitive(vVal) && typeof vVal === 'number' && vVal === idx) {
+                // Ignore the array's own name or other arrays
+                if (isArray(vVal)) continue;
+                pointers.push(vName);
+            }
+        }
+        return pointers;
+    };
+
     return (
-      <span id={nodeId} className="text-yellow-400 font-mono font-bold px-1">
-        {String(data)}
-      </span>
+        <div className="flex items-end gap-2 py-6 px-4">
+            {data.map((item, idx) => {
+                const pointers = pointersForIndex(idx);
+                return (
+                    <div key={idx} className="flex flex-col items-center gap-1.5 relative group" id={`obj-${item?.__id || ''}`}>
+                        {/* Step-by-Step Pointers / Function Loop Variables */}
+                        {pointers.length > 0 && (
+                            <div className="absolute bottom-full mb-1 flex flex-col-reverse items-center gap-1">
+                                <div className="w-0.5 h-3 bg-sky-500/50 rounded" />
+                                {pointers.map(p => (
+                                    <span key={p} className="text-[10px] bg-sky-500 text-white px-1.5 py-0.5 rounded-sm font-mono shadow-[0_0_10px_rgba(14,165,233,0.5)]">
+                                        {p}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                        
+                        <div className="w-14 h-14 flex items-center justify-center border-2 border-zinc-600 bg-zinc-800 text-zinc-100 font-mono text-base rounded hover:border-sky-500 transition-colors shadow-lg relative">
+                            {isPrimitive(item) ? String(item) : (item.__ref ? 'Ref' : 'Obj')}
+                            {item?.__ref && <Xarrow start={`obj-${item.__ref}-ptr-${idx}`} end={`obj-${item.__ref}`} showHead={true} color="#a1a1aa" />}
+                        </div>
+                        <span className="text-[10px] text-zinc-500 font-mono bg-zinc-900 px-1.5 rounded">{idx}</span>
+                    </div>
+                );
+            })}
+            {data.length === 0 && <span className="text-zinc-600 font-mono text-xs italic">Empty Array</span>}
+        </div>
     );
-  }
+};
 
-  // 4. Handle Arrays
-  if (Array.isArray(data)) {
+const LinkedListViewer = ({ head, path }) => {
+    const nodes = [];
+    let curr = head;
+    let limit = 20; // safety against infinit loops
+    const visited = new Set();
+    let hasCycle = false;
+
+    while (curr && !isPrimitive(curr) && limit > 0) {
+        if (visited.has(curr)) {
+            hasCycle = true;
+            break;
+        }
+        visited.add(curr);
+        nodes.push(curr);
+        curr = curr.next !== undefined ? curr.next : curr.Next;
+        limit--;
+    }
+
     return (
-      <div id={nodeId} className="flex flex-wrap gap-1 p-2 bg-white/5 border border-zinc-800 rounded">
-        {data.map((item, i) => (
-          <div key={i} className="flex flex-col items-center border border-zinc-700 bg-zinc-900 p-1 rounded">
-            <span className="text-[8px] text-zinc-500">{i}</span>
-            <DataNode data={item} depth={depth + 1} />
-          </div>
-        ))}
-      </div>
+        <div className="flex items-center gap-12 p-6 overflow-x-auto">
+            {nodes.map((n, i) => {
+                const nodeId = `ll-${path}-${i}`;
+                const val = n.val !== undefined ? n.val : (n.value !== undefined ? n.value : n.data);
+                return (
+                    <div key={i} className="relative shrink-0" id={n.__id ? `obj-${n.__id}` : ''}>
+                        <div id={nodeId} className="flex border-2 border-purple-500 bg-purple-900/20 shadow-[0_0_15px_rgba(168,85,247,0.3)] rounded-md overflow-hidden z-10 relative hover:-translate-y-1 transition-transform">
+                            <div className="px-5 py-3 font-mono font-bold text-purple-100 border-r-2 border-purple-500/50 flex items-center justify-center min-w-[3.5rem] bg-zinc-900/50">
+                                {val !== undefined && val !== null ? String(val) : 'null'}
+                            </div>
+                            <div className="px-3 py-3 flex items-center justify-center bg-purple-500/20">
+                                <div className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div>
+                            </div>
+                        </div>
+
+                        {/* Arrow to Next Node */}
+                        {i < nodes.length - 1 && (
+                            <Xarrow start={nodeId} end={`ll-${path}-${i+1}`} showHead={true} color="#c084fc" strokeWidth={2.5} path="straight" startAnchor="right" endAnchor="left" />
+                        )}
+
+                        {/* Null Terminator */}
+                        {i === nodes.length - 1 && !hasCycle && (!n.next && !n.Next) && (
+                            <>
+                                <div id={`ll-${path}-null`} className="absolute -right-16 top-1/2 -translate-y-1/2 text-zinc-500 font-mono text-xs italic bg-zinc-900 px-2 rounded">∅</div>
+                                <Xarrow start={nodeId} end={`ll-${path}-null`} showHead={true} color="#52525b" strokeWidth={2} path="straight" dashness={true} startAnchor="right" endAnchor="left" />
+                            </>
+                        )}
+                    </div>
+                );
+            })}
+            
+            {hasCycle && <span className="text-rose-500 text-xs font-mono font-bold ml-4 border border-rose-500 px-2 py-1 rounded bg-rose-900/20">⟲ Cycle Detected</span>}
+            {limit === 0 && <span className="text-zinc-500 text-xs ml-4">(Truncated)</span>}
+        </div>
     );
-  }
+};
 
-  // 5. Handle Objects (Linked Lists / Trees)
-  const keys = Object.keys(data);
-  return (
-    <div 
-      id={nodeId} 
-      className="p-3 border border-sky-500/30 bg-sky-900/10 rounded-lg shadow-inner min-w-[60px]"
-    >
-      {keys.map((key) => {
-        const val = data[key];
-        const isPointer = ['next', 'left', 'right'].includes(key.toLowerCase());
+const TreeViewer = ({ node, path }) => {
+    if (!node || isPrimitive(node)) return null;
 
-        return (
-          <div key={key} className="mb-2 last:mb-0">
-            <div className="text-[9px] text-sky-400 font-mono uppercase opacity-70">{key}</div>
-            <div className="pl-2 border-l border-sky-500/20">
-              <DataNode data={val} depth={depth + 1} />
-              {/* Only render arrow if it's a pointer to another object */}
-              {isPointer && val && typeof val === 'object' && (
-                <Xarrow
-                  start={nodeId}
-                  end={`node-${key}-${depth}`} // Simplified for testing
-                  color="#0ea5e9"
-                  strokeWidth={1.5}
-                  headSize={4}
-                />
-              )}
+    const nodeId = `tree-${path}`;
+    const leftChild = node.left !== undefined ? node.left : node.Left;
+    const rightChild = node.right !== undefined ? node.right : node.Right;
+    const val = node.val !== undefined ? node.val : (node.value !== undefined ? node.value : node.data);
+
+    return (
+        <div className="flex flex-col items-center gap-8 py-4" id={node.__id ? `obj-${node.__id}` : ''}>
+            <div 
+                id={nodeId} 
+                className="w-14 h-14 rounded-full border-2 border-emerald-500 bg-emerald-900/40 flex items-center justify-center font-mono font-bold text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)] z-10 hover:bg-emerald-800 transition-colors"
+                title={`Tree Node: ${val}`}
+            >
+                {val !== undefined && val !== null ? String(val) : 'null'}
             </div>
-          </div>
+            
+            <div className="flex gap-16 justify-center">
+                {leftChild && !isPrimitive(leftChild) && (
+                    <div className="flex flex-col items-center relative">
+                        <TreeViewer node={leftChild} path={`${path}-L`} />
+                        <Xarrow 
+                            start={nodeId} 
+                            end={`tree-${path}-L`} 
+                            showHead={true} 
+                            color="#34d399" 
+                            strokeWidth={2} 
+                            path="straight" 
+                            startAnchor="bottom" 
+                            endAnchor="top" 
+                        />
+                    </div>
+                )}
+                {rightChild && !isPrimitive(rightChild) && (
+                    <div className="flex flex-col items-center relative">
+                        <TreeViewer node={rightChild} path={`${path}-R`} />
+                        <Xarrow 
+                            start={nodeId} 
+                            end={`tree-${path}-R`} 
+                            showHead={true} 
+                            color="#34d399" 
+                            strokeWidth={2} 
+                            path="straight" 
+                            startAnchor="bottom" 
+                            endAnchor="top" 
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const ObjectViewer = ({ data, path, rootVariables }) => {
+    // Standard Object/Dictionary fallback
+    return (
+        <div className="p-4 border-l-2 border-sky-500/50 bg-sky-900/10 rounded-r-lg shadow-inner min-w-[120px] inline-block" id={data.__id ? `obj-${data.__id}` : ''}>
+             {Object.entries(data).map(([k, v]) => {
+                  if (k === '__id') return null;
+                  return (
+                      <div key={k} className="flex flex-col mb-3 last:mb-0">
+                           <span className="text-[10px] text-sky-400 font-mono mb-1 uppercase tracking-wider">{k}</span>
+                           <div className="pl-3 border-l text-sm border-zinc-700">
+                               <DataDispatcher data={v} path={`${path}-${k}`} rootVariables={rootVariables} />
+                           </div>
+                      </div>
+                  )
+             })}
+        </div>
+    );
+};
+
+
+const DataDispatcher = ({ data, path, rootVariables }) => {
+    if (isPrimitive(data)) {
+        return <PrimitiveViewer data={data} />;
+    }
+    if (data.__ref !== undefined) {
+        // Pointer mapping! Graph reference visually.
+        return (
+            <div className="relative inline-flex flex-col items-center">
+                <div id={`ptr-${path}`} className="px-3 py-1 bg-zinc-800 border-2 border-zinc-600 rounded-lg text-xs font-mono text-zinc-300 shadow-md">
+                    Pointer
+                </div>
+                <Xarrow start={`ptr-${path}`} end={`obj-${data.__ref}`} showHead={true} color="#38bdf8" strokeWidth={2} dashness={true} headSize={4} />
+            </div>
         );
-      })}
-    </div>
-  );
+    }
+    if (isArray(data)) {
+        return <ArrayViewer data={data} rootVariables={rootVariables} />;
+    }
+    if (isTreeNode(data)) {
+        return <TreeViewer node={data} path={path} />;
+    }
+    if (isLinkedListNode(data)) {
+        return <LinkedListViewer head={data} path={path} />;
+    }
+    return <ObjectViewer data={data} path={path} rootVariables={rootVariables} />;
 };
 
 
 // --- Main Section ---
 const VisualizerSection = ({
-  stateList = [], currentStateIndex = 0, setCurrentStateIndex,
-  isPlaying, setIsPlaying, onClose
+    stateList = [], currentStateIndex = 0, setCurrentStateIndex,
+    isPlaying, setIsPlaying, onClose
 }) => {
-  const currentState = stateList[currentStateIndex] || { variables: {} };
-  const variables = currentState.variables || {};
+    const currentState = stateList[currentStateIndex] || { variables: {} };
+    const variables = currentState.variables || {};
 
-  return (
-    <div className="flex flex-col h-full bg-[#050505] text-zinc-100 select-none font-sans">
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-zinc-900 bg-[#0a0a0a]">
-        <div className="flex items-center gap-2.5">
-          <Zap size={18} className="text-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.4)]" />
-          <span className="font-bold text-xs tracking-wider text-zinc-300">STRUCTURE ENGINE v1.1</span>
-        </div>
-        <button onClick={onClose} className="hover:bg-zinc-800/50 p-1 rounded transition-colors">
-          <X size={16} />
-        </button>
-      </div>
-
-      {/* 4. WRAP THE RENDER AREA IN XWRAPPER */}
-      {/* This component re-calculates all arrow paths whenever the DOM updates */}
-      <Xwrapper>
-        <div className="flex-grow overflow-auto p-5 space-y-8 custom-scrollbar relative">
-          {Object.keys(variables).length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-zinc-600">
-              <Database size={36} className="mb-3 opacity-30" />
-              <p className="text-[11px] font-mono tracking-tight">WAITING FOR MEMORY SNAPSHOT...</p>
-            </div>
-          ) : (
-            Object.entries(variables).map(([name, value]) => (
-              <div key={name} className="animate-in fade-in slide-in-from-left-2 duration-300">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="h-2 w-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.7)]" />
-                  <span className="text-xs font-bold text-zinc-200 font-mono">{name}</span>
+    return (
+        <div className="flex flex-col h-full bg-[#050505] text-zinc-100 select-none font-sans">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-zinc-900 bg-[#0a0a0a]">
+                <div className="flex items-center gap-3">
+                    <Zap size={18} className="text-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.4)]" />
+                    <span className="font-bold text-xs tracking-wider text-zinc-300">DSA VISUALIZATION ENGINE</span>
                 </div>
-                {/* Begin the recursive render */}
-                <DataNode data={value} name={name} />
-              </div>
-            ))
-          )}
-        </div>
-      </Xwrapper>
-
-      {/* Controls */}
-      <div className="p-4 border-t border-zinc-900 bg-[#0a0a0a]">
-        <div className="flex flex-col gap-3">
-          <input
-            type="range"
-            min="0"
-            max={Math.max(0, stateList.length - 1)}
-            value={currentStateIndex}
-            onChange={(e) => { setIsPlaying(false); setCurrentStateIndex(parseInt(e.target.value)); }}
-            className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-sky-500"
-          />
-          <div className="flex items-center justify-between text-zinc-500 font-mono text-[10px]">
-            <span>STEP {currentStateIndex + 1} / {stateList.length}</span>
-            <div className="flex items-center gap-5 text-zinc-300">
-              <button onClick={() => setCurrentStateIndex(Math.max(0, currentStateIndex - 1))} className="hover:text-sky-500"><SkipBack size={18} /></button>
-              <button 
-                onClick={() => setIsPlaying(!isPlaying)} 
-                className="bg-sky-600 hover:bg-sky-500 p-2.5 rounded-full transition-all shadow-[0_0_12px_rgba(14,165,233,0.3)] active:scale-95"
-              >
-                {isPlaying ? <Pause size={18} fill="white" className="text-white"/> : <Play size={18} fill="white" className="text-white"/>}
-              </button>
-              <button onClick={() => setCurrentStateIndex(Math.min(stateList.length - 1, currentStateIndex + 1))} className="hover:text-sky-500"><SkipForward size={18} /></button>
+                <button onClick={onClose} className="hover:bg-zinc-800 p-1.5 rounded transition-colors text-zinc-400 hover:text-white">
+                    <X size={16} />
+                </button>
             </div>
-            <div className="w-12"></div> {/* Spacer */}
-          </div>
+
+            {/* Render Area wrapped in Xwrapper for arrows */}
+            <Xwrapper>
+                <div className="flex-grow overflow-auto p-6 space-y-6 custom-scrollbar relative">
+                    {Object.keys(variables).length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-zinc-600">
+                            <Database size={48} className="mb-4 opacity-20" />
+                            <p className="text-xs font-mono tracking-tight uppercase">Waiting for memory snapshot...</p>
+                        </div>
+                    ) : (
+                        Object.entries(variables).map(([name, value]) => {
+                            // Optionally hide internal system variables if they bleed through
+                            if (name.startsWith('__')) return null;
+
+                            return (
+                                <div key={name} className="animate-in fade-in slide-in-from-bottom-2 duration-500 bg-zinc-900/30 p-5 rounded-xl border border-zinc-800/80 mb-6 backdrop-blur-sm relative shadow-xl overflow-x-auto">
+                                    <div className="flex items-center gap-3 mb-6 bg-zinc-950 inline-flex px-3 py-1.5 rounded-lg border border-zinc-800 shadow-sm">
+                                        <div className="h-2 w-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.7)]" />
+                                        <span className="text-xs font-bold text-zinc-100 font-mono">{name}</span>
+                                    </div>
+                                    
+                                    <div className="pl-2">
+                                        {/* Entry Point for the specific variable structure */}
+                                        <DataDispatcher data={value} path={name} rootVariables={variables} />
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </Xwrapper>
+
+            {/* Controls Toolbar */}
+            <div className="p-5 border-t border-zinc-900 bg-zinc-950">
+                <div className="flex flex-col gap-4 max-w-4xl mx-auto">
+                    <div className="relative group">
+                        <input
+                            type="range"
+                            min="0"
+                            max={Math.max(0, stateList.length - 1)}
+                            value={currentStateIndex}
+                            onChange={(e) => { setIsPlaying(false); setCurrentStateIndex(parseInt(e.target.value)); }}
+                            className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:h-2 transition-all"
+                        />
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-500 font-mono text-[10px]">
+                        <span className="bg-zinc-900 px-2 py-1 rounded">STEP {stateList.length === 0 ? 0 : currentStateIndex + 1} / {stateList.length}</span>
+                        <div className="flex items-center gap-6 text-zinc-300">
+                            <button onClick={() => setCurrentStateIndex(Math.max(0, currentStateIndex - 1))} className="hover:text-sky-500 transition-colors p-1"><SkipBack size={18} /></button>
+                            <button 
+                                onClick={() => setIsPlaying(!isPlaying)} 
+                                className="bg-sky-600 hover:bg-sky-500 p-3 rounded-full transition-all shadow-[0_0_15px_rgba(14,165,233,0.4)] hover:shadow-[0_0_20px_rgba(14,165,233,0.6)] hover:scale-105 active:scale-95"
+                            >
+                                {isPlaying ? <Pause size={18} fill="white" className="text-white"/> : <Play size={18} fill="white" className="text-white"/>}
+                            </button>
+                            <button onClick={() => setCurrentStateIndex(Math.min(stateList.length - 1, currentStateIndex + 1))} className="hover:text-sky-500 transition-colors p-1"><SkipForward size={18} /></button>
+                        </div>
+                        <div className="w-20 hidden sm:block"></div> {/* Spacer for symmetry */}
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default VisualizerSection;

@@ -1,4 +1,3 @@
-import { p } from "framer-motion/client";
 import { Codesandbox } from "lucide-react";
 
 export const transpileToVisualJS = (code, language) => {
@@ -84,7 +83,16 @@ const transformPythonStructure = (code) => {
         return `for (let ${varName} = ${start}; ${varName} < ${stop}; ${varName} += ${step}) {`;
     });
 
-    // 3. Simple keyword translations
+    // 3. Handle Python Classes and Constructors
+    processed = processed.replace(/class\s+(\w+)\s*\{/g, "class $1 {");
+    processed = processed.replace(/def\s+__init__\s*\(\s*self([^)]*)\)\s*\{/g, (match, args) => {
+        let cleanArgs = args.replace(/None/g, "null").replace(/True/g, "true").replace(/False/g, "false");
+        if (cleanArgs.trim().startsWith(',')) cleanArgs = cleanArgs.replace(/^\s*,\s*/, '');
+        return `constructor(${cleanArgs}) {`;
+    });
+    processed = processed.replace(/self\./g, "this.");
+
+    // 4. Simple keyword translations
     processed = processed.replace(/\belif\b/g, "else if")
                          .replace(/\bTrue\b/g, "true")
                          .replace(/\bFalse\b/g, "false")

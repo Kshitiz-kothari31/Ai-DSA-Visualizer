@@ -12,6 +12,8 @@
   "dependencies": {
     "@google/genai": "^1.45.0",
     "@monaco-editor/react": "^4.7.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@tailwindcss/vite": "^4.2.1",
     "acorn": "^8.16.0",
     "astring": "^1.9.0",
@@ -21,9 +23,11 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-is": "^19.2.4",
+    "react-router-dom": "^7.14.0",
     "react-xarrows": "^2.0.2",
     "recharts": "^3.8.1",
-    "tailwindcss": "^4.2.1"
+    "tailwindcss": "^4.2.1",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

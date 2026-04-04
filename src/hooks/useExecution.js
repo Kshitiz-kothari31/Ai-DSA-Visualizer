@@ -40,17 +40,45 @@ export function useExecution() {
     const clearOutput = useCallback(() => setOutput([]), []);
 
     /**
-     * Helper to perform a deep clone of the execution state.
-     * This ensures that snapshots of objects/arrays don't change 
-     * as the code continues to run.
+     * Helper to perform an ID-based clone of the execution state.
+     * This preserves pointers and circular references!
      */
-    const deepClone = (obj) => {
-        try {
-            return JSON.parse(JSON.stringify(obj));
-        } catch (e) {
-            // Handle circular references if they exist in the user's data
-            return { ...obj }; 
+    const takeSnapshot = (variablesRoot) => {
+        const memory = new Map();
+        let idCounter = 1;
+
+        const cloneDeep = (val) => {
+            if (val === null || val === undefined) return val;
+            if (typeof val !== 'object') return val;
+            
+            if (memory.has(val)) {
+                return { __ref: memory.get(val) };
+            }
+
+            const id = idCounter++;
+            memory.set(val, id);
+
+            if (Array.isArray(val)) {
+                const arr = [];
+                val.forEach((item, i) => arr[i] = cloneDeep(item));
+                arr.__id = id;
+                return arr;
+            }
+
+            const obj = { __id: id };
+            for (let key in val) {
+                if (key !== '__id') obj[key] = cloneDeep(val[key]);
+            }
+            return obj;
+        };
+
+        const snapshot = {};
+        for (let k in variablesRoot) {
+            if (k === '__logs') continue;
+            // clone each root variable tracking IDs
+            snapshot[k] = cloneDeep(variablesRoot[k]);
         }
+        return snapshot;
     };
 
     const executeCode = useCallback(async (code, language = 'javascript', mode = 'visualize') => {
@@ -80,16 +108,8 @@ export function useExecution() {
                     const state = frame.state || {};
                     const logs = state.__logs || [];
                     
-                    const variablesSnapshot = {};
-
-                    // Instead of filtering for numbers/strings, we take EVERYTHING
-                    Object.entries(state).forEach(([key, val]) => {
-                        if (key === '__logs') return;
-
-                        // Deep clone the value so that future mutations 
-                        // don't overwrite this step's history
-                        variablesSnapshot[key] = deepClone(val);
-                    });
+                    // Track everything via object graph mapping
+                    const variablesSnapshot = takeSnapshot(state);
 
                     if (logs.length > 0) setOutput(logs);
 
