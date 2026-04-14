@@ -30,7 +30,7 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
             <div className="flex items-center space-x-8">
                 <div className="flex items-center space-x-2">
                     <Code2 className="w-6 h-6 text-[#3b82f6]" />
-                    <h1 className="text-xl font-bold text-white tracking-widest">DSA_Visualizer</h1>
+                    <h1 className="text-xl font-bold text-white tracking-widest">Code_Visualizer+</h1>
                 </div>
 
                 <div className="flex items-center space-x-4">
@@ -39,17 +39,13 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
                         className="flex items-center space-x-1 text-sm text-gray-400 hover:text-[#3b82f6] font-medium transition-colors"
                     >
                         <Upload className="w-4 h-4" />
-                        <span>File</span>
+                        <span>Upload File</span>
                         <input
                             type="file"
                             ref={fileInputRef}
                             className="hidden"
                             onChange={handleFileChange}
                         />
-                    </button>
-                    <button className="flex items-center space-x-1 text-sm text-gray-400 hover:text-[#3b82f6] font-medium transition-colors">
-                        <Save className="w-4 h-4" />
-                        <span>Code</span>
                     </button>
                 </div>
             </div>
