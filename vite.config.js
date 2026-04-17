@@ -6,12 +6,13 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import dotenv from 'dotenv'
-import { GoogleGenAI } from '@google/genai'
 
 dotenv.config()
 
-const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
-
+/**
+ * Execute Code Plugin
+ * Handles local execution of snippets and captures output for terminal and visualization.
+ */
 const executeCodePlugin = () => ({
   name: 'execute-code-plugin',
   configureServer(server) {
@@ -19,7 +20,26 @@ const executeCodePlugin = () => ({
 
     const setupProcessListeners = (proc, server, filesToCleanup) => {
       proc.stdout.on('data', (data) => {
-        server.ws.send('terminal:output', { data: data.toString() });
+        const text = data.toString();
+        
+        // Detect Visualization Frames
+        if (text.includes('__VISUALIZE__:')) {
+          const lines = text.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('__VISUALIZE__:')) {
+              try {
+                const frameData = JSON.parse(line.replace('__VISUALIZE__:', '').trim());
+                server.ws.send('terminal:visualize-frame', frameData);
+              } catch (e) {
+                console.error("Failed to parse visualizer frame:", e);
+              }
+            } else if (line.trim()) {
+              server.ws.send('terminal:output', { data: line + '\n' });
+            }
+          }
+        } else {
+          server.ws.send('terminal:output', { data: text });
+        }
       });
 
       proc.stderr.on('data', (data) => {
@@ -27,7 +47,6 @@ const executeCodePlugin = () => ({
       });
 
       proc.on('close', (code, signal) => {
-        // If signal is present, the process was killed manually (e.g. by us)
         if (signal) {
             server.ws.send('terminal:output', { data: `\nProcess terminated by signal: ${signal}` });
         } else {
@@ -46,7 +65,7 @@ const executeCodePlugin = () => ({
     };
 
     server.ws.on('terminal:run', (data) => {
-      const { code, language } = data;
+      const { code, language, mode } = data;
       if (currentProcess) {
         currentProcess.kill();
       }
@@ -63,12 +82,33 @@ const executeCodePlugin = () => ({
       } else if (language === 'python') {
         filename = path.join(tmpDir, `script_${uniqueId}.py`);
         fs.writeFileSync(filename, code);
-        cmd = 'python';
-        args = ['-u', filename]; // -u for unbuffered output
+        
+        if (mode === 'visualize') {
+            // Use our local tracer script
+            const tracerPath = path.resolve(process.cwd(), 'scripts', 'py_tracer.py');
+            cmd = 'python';
+            args = ['-u', tracerPath, filename];
+        } else {
+            cmd = 'python';
+            args = ['-u', filename];
+        }
       } else if (language === 'cpp') {
         const srcFile = path.join(tmpDir, `prog_${uniqueId}.cpp`);
         const exeFile = path.join(tmpDir, `prog_${uniqueId}.exe`);
-        fs.writeFileSync(srcFile, code);
+        
+        // Auto-inject C++ helper if in visualize mode
+        let finalCode = code;
+        if (mode === 'visualize') {
+            const helper = `
+#include <iostream>
+#include <string>
+#include <vector>
+#define VISUALIZE(name, val) std::cout << "__VISUALIZE__:{\\"variables\\":{\\"" << #name << "\\":" << val << "}}" << std::endl;
+`;
+            finalCode = helper + code;
+        }
+
+        fs.writeFileSync(srcFile, finalCode);
         
         exec(`g++ "${srcFile}" -o "${exeFile}"`, (error, stdout, stderr) => {
           if (error) {
@@ -136,7 +176,6 @@ const executeCodePlugin = () => ({
               fs.writeFileSync(srcFile, code);
               cmd = `g++ "${srcFile}" -o "${exeFile}" && "${exeFile}"`;
             } else if (language === 'java') {
-              // Assume public class Main or similar, but simpler to just use java 11+ single file run
               filename = path.join(tmpDir, `Main_${uniqueId}.java`);
               fs.writeFileSync(filename, code);
               cmd = `java "${filename}"`;
@@ -150,73 +189,9 @@ const executeCodePlugin = () => ({
                res.writeHead(200, { 'Content-Type': 'application/json' });
                res.end(JSON.stringify({ output: output.trim() }));
                
-               // Cleanup
+               // Cleanup handlers
                try { fs.unlinkSync(filename); } catch (e) {}
-               if (language === 'cpp') {
-                 try { fs.unlinkSync(path.join(tmpDir, `prog_${uniqueId}.cpp`)); } catch(e){}
-                 try { fs.unlinkSync(path.join(tmpDir, `prog_${uniqueId}.exe`)); } catch(e){}
-               }
             });
-          } catch (err) {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: err.message }));
-          }
-        });
-      } else if (req.url === '/api/ai-analyze' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => body += chunk);
-        req.on('end', async () => {
-          if (!ai) {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ error: 'GEMINI_API_KEY is not set in .env file' }));
-          }
-          try {
-            const { code, language } = JSON.parse(body);
-            const prompt = `Analyze this ${language} algorithm.\n\nCode:\n${code}\n\nRespond strictly with JSON in this format, and nothing else (no markdown block backticks):\n{ "summary": "brief summary of what it does", "timeComplexity": "e.g., O(N^2)", "spaceComplexity": "e.g., O(1)", "chartData": [{"inputSize": 10, "operations": 100}, {"inputSize": 50, "operations": 2500}, {"inputSize": 100, "operations": 10000}] }`;
-            const response = await ai.models.generateContent({
-              model: 'gemini-2.5-flash',
-              contents: prompt,
-            });
-            let textOutput = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(textOutput);
-          } catch (err) {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: err.message }));
-          }
-        });
-      } else if (req.url === '/api/ai-visualize' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => body += chunk);
-        req.on('end', async () => {
-          if (!ai) {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ error: 'GEMINI_API_KEY is not set in .env file' }));
-          }
-          try {
-            const { code, language } = JSON.parse(body);
-            const prompt = `Act as an algorithm visualizer engine. Read this ${language} algorithm code.\n\nCode:\n${code}\n\nTrace the execution of this code. 
-Return strictly a JSON array of objects. Each object represents a "frame" (a step in the algorithm like a swap, comparison, or loop update).
-Each frame must have:
-1. "array": The current state of the main array being sorted/processed. Formatted as an array of { "id": string, "value": number }.
-2. "variables": An object containing the values of important loop variables or indices (e.g., { "i": 0, "j": 1, "minIndex": 0 }).
-
-Example output:
-[
-  { 
-    "array": [{"id":"v0","value":50},{"id":"v1","value":20}], 
-    "variables": {"i":0, "j":1} 
-  }
-]
-
-Only output valid JSON array with no markdown backticks.`;
-            const response = await ai.models.generateContent({
-              model: 'gemini-2.5-flash',
-              contents: prompt,
-            });
-            let textOutput = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(textOutput);
           } catch (err) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: err.message }));

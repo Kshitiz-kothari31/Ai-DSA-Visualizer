@@ -25,7 +25,7 @@ export function useAiAnalysis() {
         } catch (error) {
             console.error('AI Analysis failed:', error);
             setAnalysisData({
-                summary: `Analysis failed: ${error.message}. Please check your API key and connection.`,
+                summary: `Analysis failed: ${error.message}. Please ensure the Python backend is running (python app.py).`,
                 timeComplexity: 'N/A',
                 spaceComplexity: 'N/A',
                 chartData: []

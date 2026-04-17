@@ -44,6 +44,7 @@ export function useExecution() {
      * This preserves pointers and circular references!
      */
     const takeSnapshot = (variablesRoot) => {
+        if (!variablesRoot) return {};
         const memory = new Map();
         let idCounter = 1;
 
@@ -86,7 +87,7 @@ export function useExecution() {
         setOutput([]);
         setStateList([]);
 
-        if (mode === 'visualize') {
+        if (mode === 'visualize' && language === 'javascript') {
             try {
                 setOutput([`Initializing Universal Data Engine...`]);
 
@@ -109,7 +110,7 @@ export function useExecution() {
                     const logs = state.__logs || [];
                     
                     // Track everything via object graph mapping
-                    const variablesSnapshot = takeSnapshot(state);
+                    const variablesSnapshot = takeSnapshot(state.variables || state);
 
                     if (logs.length > 0) setOutput(logs);
 
@@ -128,11 +129,20 @@ export function useExecution() {
             } finally {
                 setIsRunning(false);
             }
+        } else if (mode === 'visualize') {
+            // New path for other languages: Native Tracing on the server
+            if (import.meta.hot) {
+                setOutput([`Running Native Tracing for ${language}...`]);
+                import.meta.hot.send('terminal:run', { code, language, mode: 'visualize' });
+            } else {
+                setOutput(['Native Tracing requires a Vite Dev Server.']);
+                setIsRunning(false);
+            }
         } else {
             // MODE: 'run'
             if (import.meta.hot) {
                 setOutput([`Running terminal for ${language}...`]);
-                import.meta.hot.send('terminal:run', { code, language });
+                import.meta.hot.send('terminal:run', { code, language, mode: 'run' });
             } else {
                 setOutput(['Terminal requires a Vite Dev Server.']);
                 setIsRunning(false);
@@ -151,12 +161,22 @@ export function useExecution() {
                 setIsRunning(false);
                 if (code !== undefined) setOutput(prev => [...prev, `Process exited with code ${code}`]);
             };
+            const handleVisualizeFrame = (frame) => {
+                // Real-time frame capture from native processes
+                setStateList(prev => [...prev, {
+                    variables: takeSnapshot(frame.variables),
+                    line: frame.line
+                }]);
+            };
 
             import.meta.hot.on('terminal:output', handleOutput);
             import.meta.hot.on('terminal:exit', handleExit);
+            import.meta.hot.on('terminal:visualize-frame', handleVisualizeFrame);
+
             return () => {
                 import.meta.hot.off('terminal:output', handleOutput);
                 import.meta.hot.off('terminal:exit', handleExit);
+                import.meta.hot.off('terminal:visualize-frame', handleVisualizeFrame);
             };
         }
     }, []);
