@@ -54,33 +54,50 @@ def analyze():
 
 def stream_output(sid, process, files_to_cleanup):
     try:
+        buffer = ""
         while True:
-            line = process.stdout.readline()
-            if not line and process.poll() is not None:
-                break
+            # Read one byte at a time to handle prompts without newlines (like input("Prompt: "))
+            char_bytes = process.stdout.read(1)
             
-            if line:
-                text = line.decode('utf-8', errors='replace')
-                
-                # Detect Visualization Frames (Logic ported from Vite plugin)
-                if '__VISUALIZE__:' in text:
+            if not char_bytes:
+                if process.poll() is not None:
+                    break
+                socketio.sleep(0.01) # Use socketio.sleep for better async compatibility
+                continue
+            
+            char_text = char_bytes.decode('utf-8', errors='replace')
+            buffer += char_text
+            
+            if char_text == '\n':
+                # Check if this full line was a visualization frame
+                if '__VISUALIZE__:' in buffer:
                     try:
-                        # Extract the JSON part
-                        json_str = text.split('__VISUALIZE__:')[1].strip()
+                        json_str = buffer.split('__VISUALIZE__:')[1].strip()
                         frame_data = json.loads(json_str)
                         socketio.emit('terminal:visualize-frame', frame_data, room=sid)
-                    except Exception as e:
-                        socketio.emit('terminal:output', {'data': f"[Visualizer Error]: {str(e)}\n"}, room=sid)
+                    except:
+                        # Fallback: display as text if JSON parsing fails
+                        socketio.emit('terminal:output', {'data': buffer}, room=sid)
                 else:
-                    socketio.emit('terminal:output', {'data': text}, room=sid)
+                    # Flush any remaining buffer as normal text
+                    if buffer:
+                        socketio.emit('terminal:output', {'data': buffer}, room=sid)
+                buffer = ""
+            else:
+                # If the current buffer definitely isn't the start of a visualization tag,
+                # send the characters immediately to the UI for "live" interaction.
+                if not "__VISUALIZE__".startswith(buffer):
+                    socketio.emit('terminal:output', {'data': buffer}, room=sid)
+                    buffer = ""
         
-        # Capture stderr
+        # Final stderr capture
         stderr = process.stderr.read().decode('utf-8', errors='replace')
         if stderr:
             socketio.emit('terminal:output', {'data': stderr}, room=sid)
             
         return_code = process.wait()
         socketio.emit('terminal:exit', {'code': return_code}, room=sid)
+
         
     except Exception as e:
         socketio.emit('terminal:output', {'data': f"\nInternal Server Error: {str(e)}\n"}, room=sid)
