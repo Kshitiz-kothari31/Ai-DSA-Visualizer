@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { instrumentCode, executeInstrumented } from '../utils/interceptor';
 import { transpileToVisualJS } from '../utils/LanguageTranspiler';
+import { io } from 'socket.io-client';
 
 export function useExecution() {
     const [isRunning, setIsRunning] = useState(false);
@@ -8,6 +9,36 @@ export function useExecution() {
     const [stateList, setStateList] = useState([]);
     
     const inputResolver = useRef(null);
+    const socketRef = useRef(null);
+
+    // Initialize Socket for Production
+    useEffect(() => {
+        if (!import.meta.hot || import.meta.env.PROD) {
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+            socketRef.current = io(baseUrl);
+
+            socketRef.current.on('terminal:output', ({ data }) => {
+                const newLines = data.split('\n');
+                setOutput(prev => [...prev, ...newLines.filter(l => l !== '')]);
+            });
+
+            socketRef.current.on('terminal:exit', ({ code }) => {
+                setIsRunning(false);
+                if (code !== undefined) setOutput(prev => [...prev, `Process exited with code ${code}`]);
+            });
+
+            socketRef.current.on('terminal:visualize-frame', (frame) => {
+                setStateList(prev => [...prev, {
+                    variables: takeSnapshot(frame.variables),
+                    line: frame.line
+                }]);
+            });
+
+            return () => {
+                if (socketRef.current) socketRef.current.disconnect();
+            };
+        }
+    }, []);
 
     const requestInputFromUI = useCallback(() => {
         return new Promise((resolve) => {
@@ -20,7 +51,10 @@ export function useExecution() {
             inputResolver.current(input);
             inputResolver.current = null;
         }
-        if (import.meta.hot) {
+        
+        if (socketRef.current) {
+            socketRef.current.emit('terminal:input', { input });
+        } else if (import.meta.hot) {
             import.meta.hot.send('terminal:input', { input });
         }
     }, []);
@@ -131,20 +165,26 @@ export function useExecution() {
             }
         } else if (mode === 'visualize') {
             // New path for other languages: Native Tracing on the server
-            if (import.meta.hot) {
+            if (socketRef.current) {
+                setOutput([`Running Native Tracing for ${language}...`]);
+                socketRef.current.emit('terminal:run', { code, language, mode: 'visualize' });
+            } else if (import.meta.hot) {
                 setOutput([`Running Native Tracing for ${language}...`]);
                 import.meta.hot.send('terminal:run', { code, language, mode: 'visualize' });
             } else {
-                setOutput(['Native Tracing requires a Vite Dev Server.']);
+                setOutput(['Native Tracing requires a connected backend or Vite Dev Server.']);
                 setIsRunning(false);
             }
         } else {
             // MODE: 'run'
-            if (import.meta.hot) {
+            if (socketRef.current) {
+                setOutput([`Running remote terminal for ${language}...`]);
+                socketRef.current.emit('terminal:run', { code, language, mode: 'run' });
+            } else if (import.meta.hot) {
                 setOutput([`Running terminal for ${language}...`]);
                 import.meta.hot.send('terminal:run', { code, language, mode: 'run' });
             } else {
-                setOutput(['Terminal requires a Vite Dev Server.']);
+                setOutput(['Terminal requires a connected backend or Vite Dev Server.']);
                 setIsRunning(false);
             }
         }
