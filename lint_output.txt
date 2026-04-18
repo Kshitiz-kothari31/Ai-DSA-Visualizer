@@ -1,7 +1,0 @@
-﻿
-D:\VS Code\College Projects\DSA Algorithrm visualizer\src\utils\LanguageTranspiler.js
-   1:10  error  'p' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
-  14:18  error  'transformJavaStructure' is not defined                                   no-undef
-
-Γ£û 2 problems (2 errors, 0 warnings)
-

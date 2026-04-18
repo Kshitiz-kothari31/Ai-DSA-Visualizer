@@ -1,16 +1,55 @@
-# React + Vite
+# Ai-DSA-Visualizer 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A high-performance, local Data Structures and Algorithms (DSA) visualizer with integrated Machine Learning for complexity analysis. Unlike traditional visualizers that rely on external APIs, this project uses a native execution engine to trace and visualize your code in real-time.
 
-Currently, two official plugins are available:
+## ✨ Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Local Code Tracing**: Execute and trace JavaScript/Python/C++ code locally without external dependencies.
+- **ML Complexity Analysis**: Integrated Random Forest model to predict Time and Space complexity based on code structure.
+- **Interactive Visualizer**: Steppable execution with variable tracking and state snapshots.
+- **Multi-Language Support**: Support for JS, Python (transpiled), and C++.
+- **Modern UI**: Sleek, dark-mode first design with glassmorphic elements.
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React, Vite, TailwindCSS (v4), Framer Motion, Lucide Icons.
+- **Backend**: Python (Flask), Scikit-Learn, Joblib.
+- **Tracing**: Custom AST-based instrumentation (Acorn).
 
-## Expanding the ESLint configuration
+## 🚀 Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+
+- Node.js (v18+)
+- Python (v3.9+)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Kshitiz-kothari31/Ai-DSA-Visualizer.git
+   cd Ai-DSA-Visualizer
+   ```
+
+2. **Frontend Setup**
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+3. **Backend Setup**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   python app.py
+   ```
+
+## 🧠 How it Works
+
+1. **Instrumentation**: The frontend uses `acorn` to parse your JavaScript code into an AST and injects `__report` calls at every state-changing line.
+2. **Execution**: The instrumented code runs in a sandboxed `AsyncFunction` that captures logs and variable states.
+3. **ML Prediction**: The backend analyzer extracts structural features (loop depth, sorting patterns, recursion) and passes them to a pre-trained Random Forest model to determine Big-O complexity.
+
+## 📄 License
+
+MIT
