@@ -204,5 +204,7 @@ def handle_disconnect():
         except: pass
 
 if __name__ == '__main__':
-    # Use eventlet for production-ready WebSockets
-    socketio.run(app, port=5000, debug=True)
+    # Get port from environment variable (required for Render/Railway)
+    port = int(os.environ.get("PORT", 5000))
+    # In production, host must be 0.0.0.0 to be accessible externally
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
