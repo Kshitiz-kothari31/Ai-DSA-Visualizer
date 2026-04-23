@@ -244,4 +244,4 @@ if __name__ == '__main__':
     # Get port from environment variable (required for Render/Railway)
     port = int(os.environ.get("PORT", 5000))
     # In production, host must be 0.0.0.0 to be accessible externally
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
