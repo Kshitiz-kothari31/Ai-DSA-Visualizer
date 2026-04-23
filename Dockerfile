@@ -1,5 +1,5 @@
-# Use Python 3.9 slim as base
-FROM python:3.9-slim
+# Use Python 3.11 slim as base
+FROM python:3.11-slim
 
 # Install system dependencies (C++, Java, Node.js)
 RUN apt-get update && apt-get install -y \
