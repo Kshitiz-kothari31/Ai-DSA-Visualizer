@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { X, Bot, Activity, HardDrive } from 'lucide-react';
 
 export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }) {
+    const [isStressTest, setIsStressTest] = useState(false);
+
+    const formatYAxis = (tickItem) => {
+        if (tickItem >= 1e9) return (tickItem / 1e9).toFixed(1) + 'B';
+        if (tickItem >= 1e6) return (tickItem / 1e6).toFixed(1) + 'M';
+        if (tickItem >= 1e3) return (tickItem / 1e3).toFixed(0) + 'K';
+        return tickItem;
+    };
+
+    let insightColor = "border-gray-500/50 bg-gray-500/10 text-gray-400";
+    if (analysisData?.insight) {
+        if (analysisData.insight.includes("WARNING")) insightColor = "border-red-500/50 bg-red-500/10 text-red-400";
+        else if (analysisData.insight.includes("GOOD")) insightColor = "border-green-500/50 bg-green-500/10 text-green-400";
+        else if (analysisData.insight.includes("EXCELLENT") || analysisData.insight.includes("PERFECT")) insightColor = "border-blue-500/50 bg-blue-500/10 text-blue-400";
+    }
+
     return (
         <div className="h-full bg-black flex flex-col border-l border-[#1f1f1f]">
             <div className="px-4 py-3 bg-[#0a0a0a] text-sm font-bold text-[#3b82f6] uppercase tracking-widest border-b border-[#1f1f1f] flex justify-between items-center">
@@ -51,15 +67,30 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
                             </div>
                         </div>
 
+                        {/* Performance Insight */}
+                        {analysisData.insight && (
+                            <div className={`p-4 rounded-lg shadow-lg border ${insightColor} text-sm font-medium leading-relaxed`}>
+                                {analysisData.insight}
+                            </div>
+                        )}
+
                         {/* Performance Chart */}
                         <div className="bg-[#0a0a0a] p-4 rounded-lg shadow-lg border border-[#1f1f1f]">
-                            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 text-center">
-                                Theoretical Performance
-                            </h3>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                    Theoretical Performance
+                                </h3>
+                                <button 
+                                    onClick={() => setIsStressTest(!isStressTest)}
+                                    className={`px-3 py-1 text-xs font-bold rounded uppercase tracking-wider transition-colors ${isStressTest ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-[#1f1f1f] text-gray-400 hover:text-white border border-[#2a2a2a]'}`}
+                                >
+                                    {isStressTest ? 'Stress Test ON' : 'Stress Test OFF'}
+                                </button>
+                            </div>
                             <div className="h-[250px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart
-                                        data={analysisData.chartData} // This is the array from Python
+                                        data={isStressTest ? analysisData.stressChartData : analysisData.chartData}
                                         margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
                                     >
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f1f1f" />
@@ -77,6 +108,7 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
                                             fontSize={10} 
                                             tickLine={false} 
                                             axisLine={false} 
+                                            tickFormatter={formatYAxis}
                                         />
                                         <Tooltip 
                                             contentStyle={{ backgroundColor: '#000', borderRadius: '8px', border: '1px solid #1f1f1f' }}

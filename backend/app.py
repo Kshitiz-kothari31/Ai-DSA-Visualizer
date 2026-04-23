@@ -13,7 +13,7 @@ import signal
 
 app = Flask(__name__)
 # In production, set cors_allowed_origins to your frontend URL
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 CORS(app)
 
 # Initialize Complexity Analyzer
@@ -22,17 +22,23 @@ engine = MLComplexityAnalyzer()
 # Process management
 active_processes = {}
 
-def get_chart_data(tc):
-    steps = [1, 50, 100, 150, 200, 250]
+def get_chart_data(tc, is_stress=False):
+    steps = [1000, 3000, 5000, 7500, 10000] if is_stress else [1, 50, 100, 150, 200, 250]
     points = []
     for n in steps:
-        if "n log n" in tc: val = n * math.log2(n) if n > 0 else 0
-        elif "n²" in tc or "n^2" in tc: val = n**2
-        elif "n³" in tc or "n^3" in tc: val = n**3
-        elif "log n" in tc: val = math.log2(n) if n > 0 else 0
-        elif "2^n" in tc: val = 2**(n/20)
-        elif "n" in tc: val = n
-        else: val = 1
+        try:
+            if "n log n" in tc: val = n * math.log2(n) if n > 0 else 0
+            elif "n²" in tc or "n^2" in tc: val = n**2
+            elif "n³" in tc or "n^3" in tc: val = n**3
+            elif "log n" in tc: val = math.log2(n) if n > 0 else 0
+            elif "2^n" in tc: val = 2**(n/20) if not is_stress else 2**(n/500)
+            elif "n" in tc: val = n
+            else: val = 1
+            
+            if val > 1e12: val = 1e12 # Cap at 1 Trillion to prevent UI crash
+        except OverflowError:
+            val = 1e12
+            
         points.append({"n": n, "time": round(val, 2)})
     return points
 
@@ -43,11 +49,25 @@ def analyze():
     language = data.get('language', 'javascript')
     tc, tc_reason = engine.predict(code)
     sc, sc_reason = engine.predict_space(code)
+    
+    if "n³" in tc or "2^n" in tc or "n^3" in tc:
+        insight = f"CRITICAL WARNING: At n=10,000, {tc} requires an astronomical number of operations. It will cause severe lag or crashes on large datasets."
+    elif "n²" in tc or "n^2" in tc:
+        insight = f"WARNING: At n=10,000, {tc} requires ~100,000,000 operations. It will cause noticeable lag on large datasets."
+    elif "n log n" in tc:
+        insight = f"GOOD: At n=10,000, {tc} scales efficiently with only ~130,000 operations. Safe for large datasets."
+    elif "n" in tc:
+        insight = f"EXCELLENT: At n=10,000, {tc} requires exactly 10,000 operations. Highly optimized for massive datasets."
+    else:
+        insight = f"PERFECT: {tc} executes in constant or logarithmic time regardless of dataset size."
+
     return jsonify({
         "timeComplexity": tc,
         "spaceComplexity": sc,
         "summary": f"Analyzed {language} code: {tc_reason} {sc_reason}",
-        "chartData": get_chart_data(tc)
+        "insight": insight,
+        "chartData": get_chart_data(tc, is_stress=False),
+        "stressChartData": get_chart_data(tc, is_stress=True)
     })
 
 # --- WebSocket Execution Engine ---

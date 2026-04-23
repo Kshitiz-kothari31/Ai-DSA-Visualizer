@@ -6,12 +6,14 @@ class MLComplexityAnalyzer:
     def __init__(self):
         try:
             self.model = joblib.load('complexity_model.pkl')
+            self.space_model = joblib.load('space_model.pkl')
             self.rank_map = {
                 "O(2^n)": 6, "O(n³)": 5, "O(n²)": 4, 
                 "O(n log n)": 3, "O(n)": 2, "O(log n)": 1, "O(1)": 0
             }
         except:
             self.model = None
+            self.space_model = None
 
     def clean_code(self, code):
         # Remove comments
@@ -66,9 +68,17 @@ class MLComplexityAnalyzer:
 
         # 6. Data Structure Complexity
         # Count allocations or usage of complex structures
-        structs = len(re.findall(r'vector|\[\]|new|List|ArrayList|map|set|dict|unordered_', clean, re.I))
+        structs_pattern = r'\b(?:vector|List|ArrayList|map|set|dict|unordered_)\b|=\s*\[\]|new\s+\w+(?:\[|\()|\.push\b|\.append\b|\.add\b'
+        structs = len(re.findall(structs_pattern, clean, re.I))
         
-        return [loops, max_depth, recursion, sorting, halving, structs]
+        # 7. Max Array Dimension
+        max_array_dim = 0
+        if re.search(r'vector<vector|\[\]\s*\[\]|new\s+\w+\[\w*\]\s*\[\w*\]', clean):
+            max_array_dim = 2
+        elif re.search(r'\b(?:vector|ArrayList|stack|queue)\b|new\s+\w+(?:\[|\()|=\s*\[\]|\.push\b|\.append\b|\.add\b', clean, re.I):
+            max_array_dim = 1
+        
+        return [loops, max_depth, recursion, sorting, halving, structs, max_array_dim]
 
     def predict(self, code):
         if not self.model: return "O(1)", "Model not loaded. Please train the model."
@@ -85,9 +95,17 @@ class MLComplexityAnalyzer:
         return prediction, f"ML Confidence: {confidence:.1f}%. {reasoning}"
 
     def predict_space(self, code):
-        clean = self.clean_code(code)
-        if re.search(r'vector<vector|\[\]\[\]|new\W+\w+\[\w+\]\[\w+\]', clean):
-            return "O(n²)", "2D Data structure detected (Matrix/Grid)."
-        if re.search(r'vector|new\W+|\[\w+\]|ArrayList|stack|queue|push_back', clean):
-            return "O(n)", "Linear data structure usage detected."
-        return "O(1)", "Minimal auxiliary space detected."
+        if not self.space_model: return "O(1)", "Space model not loaded. Please train the model."
+        features = self.extract_features(code)
+        prediction = self.space_model.predict([features])[0]
+        probs = self.space_model.predict_proba([features])
+        confidence = np.max(probs) * 100
+        
+        # Meta-Reasoning for the summary
+        reasoning = f"Space analysis based on "
+        if features[6] == 2: reasoning += "2D array usage detected."
+        elif features[6] == 1: reasoning += "1D linear structure usage detected."
+        elif features[2] > 0: reasoning += f"Recursive stack depth scaling detected."
+        else: reasoning += "minimal auxiliary variable usage."
+        
+        return prediction, f"ML Space Confidence: {confidence:.1f}%. {reasoning}"
