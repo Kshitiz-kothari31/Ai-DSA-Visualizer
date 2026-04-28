@@ -66,7 +66,7 @@ export default function Signup() {
               type="email"
               required
               disabled={isSubmitting}
-              pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+              pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
               title="Please enter a valid email address with a domain (e.g., .com, .net)"
               className="w-full px-4 py-3 bg-black/40 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-white placeholder-gray-500 disabled:opacity-50"
               placeholder="you@example.com"
