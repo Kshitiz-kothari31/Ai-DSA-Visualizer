@@ -14,12 +14,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the backend code and scripts
-COPY backend/ .
-COPY scripts/ /app/scripts/
+# Copy the engine code
+COPY . .
 
 # Expose the port Flask operates on
 EXPOSE 5000

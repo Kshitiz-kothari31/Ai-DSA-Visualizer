@@ -30,7 +30,7 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
             <div className="flex items-center space-x-8">
                 <div className="flex items-center space-x-2">
                     <Code2 className="w-6 h-6 text-[#3b82f6]" />
-                    <h1 className="text-xl font-bold text-white tracking-widest">Code_Visualizer+</h1>
+                    <h1 className="text-xl font-bold text-white tracking-widest">Koda</h1>
                 </div>
 
                 <div className="flex items-center space-x-4">

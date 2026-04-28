@@ -14,7 +14,7 @@ export function useExecution() {
     // Initialize Socket for Production
     useEffect(() => {
         if (!import.meta.hot || import.meta.env.PROD) {
-            const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+            const baseUrl = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:5001';
             socketRef.current = io(baseUrl);
 
             socketRef.current.on('terminal:output', ({ data }) => {

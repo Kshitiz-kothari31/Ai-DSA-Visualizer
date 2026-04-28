@@ -1,18 +1,42 @@
-# Logs
+# --- Dependencies ---
+node_modules/
+.pnp
+.pnp.js
+
+# --- Environment files ---
+# Never commit secrets to GitHub!
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+
+# --- Build artifacts ---
+dist/
+dist-ssr/
+build/
+
+# --- Python & ML artifacts ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
+env.bak/
+env/
+# NOTE: .pkl models are intentionally NOT ignored because Render needs them to run the ML engine!
+
+# --- Logs ---
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# --- Editor directories and files ---
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -23,23 +47,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# Python artifacts
-__pycache__/
-*.py[cod]
-*$py.class
-.pytest_cache/
-.venv/
-venv/
-
-# Transient test files/logs
+# --- Transient test files/logs ---
 test-api.js
 test-interceptor.js
 test-out.json
 test-out.txt
 lint_output.txt
-
+Thumbs.db

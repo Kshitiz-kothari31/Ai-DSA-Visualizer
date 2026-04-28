@@ -9,7 +9,7 @@ export function useAiAnalysis() {
         setAnalysisData(null);
         
         try {
-            const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+            const baseUrl = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:5001';
             const response = await fetch(`${baseUrl}/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
