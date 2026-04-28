@@ -32,7 +32,7 @@ app.use(cors({
 }));
 
 // --- 2. MongoDB Connection ---
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
 mongoose.connect(MONGODB_URI)
     .then(() => console.log("✅ AlgoAI MongoDB Connected Successfully"))
