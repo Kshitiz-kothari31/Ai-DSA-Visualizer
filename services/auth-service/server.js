@@ -16,10 +16,17 @@ app.use(express.json());
 // Allows us to parse cookies from the frontend
 app.use(cookieParser());
 
-// CORS Configuration: Essential for MERN stack communication
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    credentials: true,               // Allows cookies to be sent back and forth
+    origin: function (origin, callback) {
+        const allowedOrigins = ['http://localhost:5173', process.env.CLIENT_URL];
+        // Allow if it's localhost, the specific CLIENT_URL, or any Vercel preview link
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
