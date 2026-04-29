@@ -50,9 +50,9 @@ export default function Home() {
             <Code2 className="w-8 h-8 text-indigo-500" />
             <span className="text-2xl font-bold tracking-widest text-white">KODA</span>
         </div>
-        <div className="flex space-x-4">
-            <Link to="/login" className="px-5 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">Log In</Link>
-            <Link to="/signup" className="px-5 py-2 text-sm font-medium bg-white text-black rounded-full hover:bg-gray-200 transition-colors">Get Started</Link>
+        <div className="flex items-center space-x-2 sm:space-x-4">
+            <Link to="/login" className="hidden sm:block px-5 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors whitespace-nowrap">Log In</Link>
+            <Link to="/signup" className="px-3 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-medium bg-white text-black rounded-full hover:bg-gray-200 transition-colors whitespace-nowrap">Get Started</Link>
         </div>
       </nav>
 
