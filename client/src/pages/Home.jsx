@@ -101,17 +101,17 @@ export default function Home() {
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-white text-black rounded-full font-bold text-lg shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all flex items-center space-x-2"
+                  className="px-6 py-3 bg-white text-black rounded-full font-bold text-base shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all flex items-center space-x-2"
                 >
                   <span>Start Building</span>
-                  <Zap className="w-5 h-5" />
+                  <Zap className="w-4 h-4" />
                 </motion.button>
               </Link>
               <Link to="/login">
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-transparent border border-gray-700 text-white rounded-full font-bold text-lg hover:border-gray-400 hover:bg-white/5 transition-all"
+                  className="px-6 py-3 bg-transparent border border-gray-700 text-white rounded-full font-bold text-base hover:border-gray-400 hover:bg-white/5 transition-all"
                 >
                   Log In
                 </motion.button>

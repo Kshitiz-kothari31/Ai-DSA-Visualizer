@@ -30,8 +30,8 @@ export default function Signup() {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#050505] flex items-center justify-center text-white relative flex-col">
-      <Link to="/" className="absolute top-8 left-8 text-gray-400 hover:text-white flex items-center space-x-2 transition-colors">
+    <div className="h-screen w-screen bg-[#050505] flex items-center justify-center text-white relative flex-col px-4">
+      <Link to="/" className="absolute top-4 sm:top-8 left-4 sm:left-8 text-gray-400 hover:text-white flex items-center space-x-2 transition-colors z-20">
         <ArrowLeft className="w-5 h-5" /> <span>Back to Home</span>
       </Link>
 
@@ -44,10 +44,10 @@ export default function Signup() {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-10 rounded-3xl shadow-2xl w-full max-w-md z-10"
+        className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-6 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md z-10"
       >
-        <h2 className="text-4xl font-extrabold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Create Account</h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <h2 className="text-3xl sm:text-4xl font-extrabold mb-6 sm:mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Create Account</h2>
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
             <input
