@@ -24,10 +24,10 @@ const isTreeNode = (val) => {
 // --- Specialized DSA Viewers ---
 
 const PrimitiveViewer = ({ data }) => {
-    if (data === null || data === undefined) return <span className="text-zinc-500 font-mono text-sm italic">null</span>;
-    if (typeof data === 'boolean') return <span className="text-orange-400 font-mono text-sm">{String(data)}</span>;
-    if (typeof data === 'string') return <span className="text-green-400 font-mono text-sm">"{data}"</span>;
-    return <span className="text-yellow-400 font-mono font-bold text-sm bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20">{String(data)}</span>;
+    if (data === null || data === undefined) return <span className="text-zinc-500 font-mono text-base italic">null</span>;
+    if (typeof data === 'boolean') return <span className="text-orange-400 font-mono text-base">{String(data)}</span>;
+    if (typeof data === 'string') return <span className="text-green-400 font-mono text-base">"{data}"</span>;
+    return <span className="text-yellow-400 font-mono font-bold text-base bg-yellow-400/10 px-3 py-1 rounded border border-yellow-400/20">{String(data)}</span>;
 };
 
 const ArrayViewer = ({ data, rootVariables }) => {
@@ -53,24 +53,24 @@ const ArrayViewer = ({ data, rootVariables }) => {
                         {/* Step-by-Step Pointers / Function Loop Variables */}
                         {pointers.length > 0 && (
                             <div className="absolute bottom-full mb-1 flex flex-col-reverse items-center gap-1">
-                                <div className="w-0.5 h-3 bg-sky-500/50 rounded" />
+                                <div className="w-0.5 h-2 bg-sky-500/50 rounded" />
                                 {pointers.map(p => (
-                                    <span key={p} className="text-[10px] bg-sky-500 text-white px-1.5 py-0.5 rounded-sm font-mono shadow-[0_0_10px_rgba(14,165,233,0.5)]">
+                                    <span key={p} className="text-[9px] bg-sky-500 text-white px-1 py-0.5 rounded-sm font-mono shadow-[0_0_8px_rgba(14,165,233,0.4)]">
                                         {p}
                                     </span>
                                 ))}
                             </div>
                         )}
                         
-                        <div className="w-14 h-14 flex items-center justify-center border-2 border-zinc-600 bg-zinc-800 text-zinc-100 font-mono text-base rounded hover:border-sky-500 transition-colors shadow-lg relative">
+                        <div className="w-10 h-10 flex items-center justify-center border-2 border-zinc-600 bg-zinc-800 text-zinc-100 font-mono text-xs rounded hover:border-sky-500 transition-colors shadow-lg relative">
                             {isPrimitive(item) ? String(item) : (item.__ref ? 'Ref' : 'Obj')}
                             {item?.__ref && <Xarrow start={`obj-${item.__ref}-ptr-${idx}`} end={`obj-${item.__ref}`} showHead={true} color="#a1a1aa" />}
                         </div>
-                        <span className="text-[10px] text-zinc-500 font-mono bg-zinc-900 px-1.5 rounded">{idx}</span>
+                        <span className="text-[9px] text-zinc-500 font-mono bg-zinc-900 px-1 rounded">{idx}</span>
                     </div>
                 );
             })}
-            {data.length === 0 && <span className="text-zinc-600 font-mono text-xs italic">Empty Array</span>}
+            {data.length === 0 && <span className="text-zinc-600 font-mono text-sm italic">Empty Array</span>}
         </div>
     );
 };
@@ -100,12 +100,12 @@ const LinkedListViewer = ({ head, path }) => {
                 const val = n.val !== undefined ? n.val : (n.value !== undefined ? n.value : n.data);
                 return (
                     <div key={i} className="relative shrink-0" id={n.__id ? `obj-${n.__id}` : ''}>
-                        <div id={nodeId} className="flex border-2 border-purple-500 bg-purple-900/20 shadow-[0_0_15px_rgba(168,85,247,0.3)] rounded-md overflow-hidden z-10 relative hover:-translate-y-1 transition-transform">
-                            <div className="px-5 py-3 font-mono font-bold text-purple-100 border-r-2 border-purple-500/50 flex items-center justify-center min-w-[3.5rem] bg-zinc-900/50">
+                        <div id={nodeId} className="flex border-2 border-purple-500 bg-purple-900/20 shadow-[0_0_10px_rgba(168,85,247,0.2)] rounded overflow-hidden z-10 relative hover:-translate-y-0.5 transition-transform">
+                            <div className="px-3 py-1.5 font-mono font-bold text-purple-100 border-r border-purple-500/50 flex items-center justify-center min-w-[2.5rem] bg-zinc-900/50 text-sm">
                                 {val !== undefined && val !== null ? String(val) : 'null'}
                             </div>
-                            <div className="px-3 py-3 flex items-center justify-center bg-purple-500/20">
-                                <div className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div>
+                            <div className="px-2 py-2 flex items-center justify-center bg-purple-500/20">
+                                <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.8)]"></div>
                             </div>
                         </div>
 
@@ -143,7 +143,7 @@ const TreeViewer = ({ node, path }) => {
         <div className="flex flex-col items-center gap-8 py-4" id={node.__id ? `obj-${node.__id}` : ''}>
             <div 
                 id={nodeId} 
-                className="w-14 h-14 rounded-full border-2 border-emerald-500 bg-emerald-900/40 flex items-center justify-center font-mono font-bold text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.3)] z-10 hover:bg-emerald-800 transition-colors"
+                className="w-10 h-10 rounded-full border-2 border-emerald-500 bg-emerald-900/40 flex items-center justify-center font-mono font-bold text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.3)] z-10 hover:bg-emerald-800 transition-colors text-xs"
                 title={`Tree Node: ${val}`}
             >
                 {val !== undefined && val !== null ? String(val) : 'null'}
@@ -192,12 +192,12 @@ const ObjectViewer = ({ data, path, rootVariables }) => {
              {Object.entries(data).map(([k, v]) => {
                   if (k === '__id') return null;
                   return (
-                      <div key={k} className="flex flex-col mb-3 last:mb-0">
-                           <span className="text-[10px] text-sky-400 font-mono mb-1 uppercase tracking-wider">{k}</span>
-                           <div className="pl-3 border-l text-sm border-zinc-700">
-                               <DataDispatcher data={v} path={`${path}-${k}`} rootVariables={rootVariables} />
-                           </div>
-                      </div>
+                       <div key={k} className="flex flex-col mb-2 last:mb-0">
+                            <span className="text-[10px] text-sky-400 font-mono mb-0.5 uppercase tracking-wider">{k}</span>
+                            <div className="pl-2 border-l text-xs border-zinc-700">
+                                <DataDispatcher data={v} path={`${path}-${k}`} rootVariables={rootVariables} />
+                            </div>
+                       </div>
                   )
              })}
         </div>
@@ -244,13 +244,13 @@ const VisualizerSection = ({
     return (
         <div className="flex flex-col h-full bg-[#050505] text-zinc-100 select-none font-sans">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-zinc-900 bg-[#0a0a0a]">
-                <div className="flex items-center gap-3">
-                    <Zap size={18} className="text-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.4)]" />
-                    <span className="font-bold text-xs tracking-wider text-zinc-300">DSA VISUALIZATION ENGINE</span>
+            <div className="flex items-center justify-between p-3 border-b border-zinc-900 bg-[#0a0a0a]">
+                <div className="flex items-center gap-2">
+                    <Zap size={14} className="text-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.4)]" />
+                    <span className="font-bold text-[10px] tracking-widest text-zinc-400 uppercase">DSA Visualizer</span>
                 </div>
-                <button onClick={onClose} className="hover:bg-zinc-800 p-1.5 rounded transition-colors text-zinc-400 hover:text-white">
-                    <X size={16} />
+                <button onClick={onClose} className="hover:bg-zinc-800 p-1 rounded transition-colors text-zinc-500 hover:text-white">
+                    <X size={14} />
                 </button>
             </div>
 
@@ -259,8 +259,8 @@ const VisualizerSection = ({
                 <div className="flex-grow overflow-auto p-6 space-y-6 custom-scrollbar relative">
                     {Object.keys(variables).length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-zinc-600">
-                            <Database size={48} className="mb-4 opacity-20" />
-                            <p className="text-xs font-mono tracking-tight uppercase">Waiting for memory snapshot...</p>
+                             <Database size={40} className="mb-3 opacity-20" />
+                             <p className="text-[10px] font-mono tracking-tight uppercase">Waiting for memory snapshot...</p>
                         </div>
                     ) : (
                         Object.entries(variables).map(([name, value]) => {
@@ -268,11 +268,11 @@ const VisualizerSection = ({
                             if (name.startsWith('__')) return null;
 
                             return (
-                                <div key={name} className="animate-in fade-in slide-in-from-bottom-2 duration-500 bg-zinc-900/30 p-5 rounded-xl border border-zinc-800/80 mb-6 backdrop-blur-sm relative shadow-xl overflow-x-auto">
-                                    <div className="flex items-center gap-3 mb-6 bg-zinc-950 inline-flex px-3 py-1.5 rounded-lg border border-zinc-800 shadow-sm">
-                                        <div className="h-2 w-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.7)]" />
-                                        <span className="text-xs font-bold text-zinc-100 font-mono">{name}</span>
-                                    </div>
+                                <div key={name} className="animate-in fade-in slide-in-from-bottom-2 duration-500 bg-zinc-900/30 p-3 rounded-lg border border-zinc-800/80 mb-3 backdrop-blur-sm relative shadow-lg overflow-x-auto">
+                                     <div className="flex items-center gap-2 mb-3 bg-zinc-950 inline-flex px-1.5 py-1 rounded border border-zinc-800 shadow-sm">
+                                         <div className="h-1 w-1 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.7)]" />
+                                         <span className="text-[9px] font-bold text-zinc-100 font-mono">{name}</span>
+                                     </div>
                                     
                                     <div className="pl-2">
                                         {/* Entry Point for the specific variable structure */}
@@ -300,15 +300,15 @@ const VisualizerSection = ({
                     </div>
                     <div className="flex items-center justify-between text-zinc-500 font-mono text-[10px]">
                         <span className="bg-zinc-900 px-2 py-1 rounded">STEP {stateList.length === 0 ? 0 : currentStateIndex + 1} / {stateList.length}</span>
-                        <div className="flex items-center gap-6 text-zinc-300">
-                            <button onClick={() => setCurrentStateIndex(Math.max(0, currentStateIndex - 1))} className="hover:text-sky-500 transition-colors p-1"><SkipBack size={18} /></button>
+                        <div className="flex items-center gap-4 text-zinc-400">
+                            <button onClick={() => setCurrentStateIndex(Math.max(0, currentStateIndex - 1))} className="hover:text-sky-500 transition-colors p-1"><SkipBack size={14} /></button>
                             <button 
                                 onClick={() => setIsPlaying(!isPlaying)} 
-                                className="bg-sky-600 hover:bg-sky-500 p-3 rounded-full transition-all shadow-[0_0_15px_rgba(14,165,233,0.4)] hover:shadow-[0_0_20px_rgba(14,165,233,0.6)] hover:scale-105 active:scale-95"
+                                className="bg-sky-600 hover:bg-sky-500 p-2.5 rounded-full transition-all shadow-[0_0_12px_rgba(14,165,233,0.4)] hover:shadow-[0_0_15px_rgba(14,165,233,0.6)] hover:scale-105 active:scale-95"
                             >
-                                {isPlaying ? <Pause size={18} fill="white" className="text-white"/> : <Play size={18} fill="white" className="text-white"/>}
+                                {isPlaying ? <Pause size={14} fill="white" className="text-white"/> : <Play size={14} fill="white" className="text-white"/>}
                             </button>
-                            <button onClick={() => setCurrentStateIndex(Math.min(stateList.length - 1, currentStateIndex + 1))} className="hover:text-sky-500 transition-colors p-1"><SkipForward size={18} /></button>
+                            <button onClick={() => setCurrentStateIndex(Math.min(stateList.length - 1, currentStateIndex + 1))} className="hover:text-sky-500 transition-colors p-1"><SkipForward size={14} /></button>
                         </div>
                         <div className="w-20 hidden sm:block"></div> {/* Spacer for symmetry */}
                     </div>

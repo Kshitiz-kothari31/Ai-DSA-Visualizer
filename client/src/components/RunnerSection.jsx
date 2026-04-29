@@ -25,12 +25,12 @@ export default function RunnerSection({ output = [], isRunning, onInput, onShell
 
     return (
         <div className="h-full flex flex-col bg-black border-t border-[#1f1f1f] shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-            <div className="px-4 py-2 bg-[#0a0a0a] flex items-center justify-between border-b border-[#1f1f1f]">
+            <div className="px-4 py-1.5 bg-[#0a0a0a] flex items-center justify-between border-b border-[#1f1f1f]">
                 <div className="flex items-center space-x-2">
                     <Terminal className="w-4 h-4 text-[#3b82f6]" />
                     <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Interactive Terminal</span>
                     {isRunning && (
-                        <span className="text-xs text-[#3b82f6] font-bold animate-pulse ml-2">Running...</span>
+                        <span className="text-sm text-[#3b82f6] font-bold animate-pulse ml-2">Running...</span>
                     )}
                 </div>
                 <button onClick={onClose} className="p-1 hover:bg-[#1a1a1a] rounded text-gray-500 transition-colors">

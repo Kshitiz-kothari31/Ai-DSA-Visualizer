@@ -28,8 +28,8 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
     return (
         <nav className="w-full bg-black shadow-lg px-6 py-3 flex items-center justify-between border-b border-[#1f1f1f]">
             <div className="flex items-center space-x-8">
-                <div className="flex items-center space-x-2">
-                    <Code2 className="w-6 h-6 text-[#3b82f6]" />
+                <div className="flex items-center space-x-3">
+                    <Code2 className="w-7 h-7 text-[#3b82f6]" />
                     <h1 className="text-xl font-bold text-white tracking-widest">Koda</h1>
                 </div>
 
@@ -39,7 +39,7 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
                         className="flex items-center space-x-1 text-sm text-gray-400 hover:text-[#3b82f6] font-medium transition-colors"
                     >
                         <Upload className="w-4 h-4" />
-                        <span>Upload File</span>
+                        <span className="text-sm">Upload File</span>
                         <input
                             type="file"
                             ref={fileInputRef}
@@ -53,14 +53,14 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
             <div className="flex items-center space-x-3">
                 <button
                     onClick={onVisualize}
-                    className="flex items-center space-x-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white px-5 py-2 rounded-md font-medium transition-all border border-[#333] hover:border-[#3b82f6] shadow-sm"
+                    className="flex items-center space-x-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white px-4 py-2 rounded-md text-sm font-medium transition-all border border-[#333] hover:border-[#3b82f6] shadow-sm"
                 >
                     <Play className="w-4 h-4 fill-[#3b82f6] text-[#3b82f6]" />
                     <span>Visualize</span>
                 </button>
                 <button
                     onClick={onAiAnalysis}
-                    className="flex items-center space-x-2 bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] hover:brightness-110 text-white px-5 py-2 rounded-md font-medium transition-all shadow-[0_0_15px_rgba(59,130,246,0.5)] transform hover:-translate-y-0.5"
+                    className="flex items-center space-x-2 bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] hover:brightness-110 text-white px-4 py-2 rounded-md text-sm font-medium transition-all shadow-[0_0_15px_rgba(59,130,246,0.5)] transform hover:-translate-y-0.5"
                 >
                     <Bot className="w-4 h-4" />
                     <span>AI Analysis</span>

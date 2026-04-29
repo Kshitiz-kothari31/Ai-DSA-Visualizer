@@ -34,8 +34,8 @@ export default function EditorPage() {
   const containerRef = useRef(null);
 
   // Layout states
-  const [sidePanelWidth, setSidePanelWidth] = useState(45); // Percentage
-  const [bottomPanelHeight, setBottomPanelHeight] = useState(35); // Percentage
+  const [sidePanelWidth, setSidePanelWidth] = useState(50); // Percentage
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(40); // Percentage
   const [isResizing, setIsResizing] = useState(false);
 
   // --- Logic & Effects ---
@@ -230,13 +230,13 @@ export default function EditorPage() {
       </div>
 
       {/* Global Bottom Bar */}
-      <div className="h-8 bg-[#0a0a0a] border-t border-[#1f1f1f] flex items-center px-4 shrink-0 z-[60]">
+      <div className="h-14 bg-[#0a0a0a] border-t border-[#1f1f1f] flex items-center px-8 shrink-0 z-[60]">
           <button 
               onClick={() => setIsRunnerVisible(!isRunnerVisible)}
-              className={`flex items-center space-x-2 text-xs font-semibold transition-colors ${isRunnerVisible ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`flex items-center space-x-4 text-base font-black transition-colors ${isRunnerVisible ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-              <Terminal className="w-3.5 h-3.5" />
-              <span>Terminal</span>
+              <Terminal className="w-5 h-5" />
+              <span className="uppercase tracking-[0.2em]">Terminal</span>
           </button>
       </div>
     </div>

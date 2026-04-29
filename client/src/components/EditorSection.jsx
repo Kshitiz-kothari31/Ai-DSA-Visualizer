@@ -36,11 +36,12 @@ export default function EditorSection({ code, language, onLanguageChange, onChan
                     theme="vs-dark"
                     options={{
                         minimap: { enabled: false },
-                        fontSize: 14,
-                        padding: { top: 16 },
+                        fontSize: 16,
+                        padding: { top: 20 },
                         automaticLayout: true,
                         scrollBeyondLastLine: false,
-                        backgroundColor: '#000000'
+                        backgroundColor: '#000000',
+                        lineNumbersMinChars: 3
                     }}
                 />
             </div>
