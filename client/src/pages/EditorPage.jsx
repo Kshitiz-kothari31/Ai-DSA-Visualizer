@@ -4,6 +4,7 @@ import EditorSection from '../components/EditorSection';
 import RunnerSection from '../components/RunnerSection';
 import VisualizerSection from '../components/VisualizerSection';
 import AiAnalysisSection from '../components/AiAnalysisSection';
+import Resizer from '../components/Resizer';
 import { useExecution } from '../hooks/useExecution';
 import { useAiAnalysis } from '../hooks/useAiAnalysis';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,10 +31,12 @@ export default function EditorPage() {
   const [currentStateIndex, setCurrentStateIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const playbackIntervalRef = useRef(null);
+  const containerRef = useRef(null);
 
   // Layout states
-  const sidePanelWidth = 45; // Percentage
-  const bottomPanelHeight = 35; // Percentage
+  const [sidePanelWidth, setSidePanelWidth] = useState(45); // Percentage
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(35); // Percentage
+  const [isResizing, setIsResizing] = useState(false);
 
   // --- Logic & Effects ---
 
@@ -89,6 +92,51 @@ export default function EditorPage() {
     analyzeCode(code, language);
   }, [code, language, analyzeCode]);
 
+  // --- Resize Handlers ---
+  const handleVerticalResize = useCallback((e) => {
+    setIsResizing(true);
+    const startY = e.clientY;
+    const startHeight = bottomPanelHeight;
+    const containerHeight = containerRef.current.offsetHeight;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaY = startY - moveEvent.clientY;
+      const newHeight = Math.min(Math.max(startHeight + (deltaY / containerHeight) * 100, 10), 80);
+      setBottomPanelHeight(newHeight);
+    };
+
+    const onMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [bottomPanelHeight]);
+
+  const handleHorizontalResize = useCallback((e) => {
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startWidth = sidePanelWidth;
+    const containerWidth = containerRef.current.offsetWidth;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = startX - moveEvent.clientX;
+      const newWidth = Math.min(Math.max(startWidth + (deltaX / containerWidth) * 100, 20), 80);
+      setSidePanelWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [sidePanelWidth]);
+
   // --- Render Helpers ---
   const isRightPanelOpen = isVisualizerVisible || isAiAnalysisVisible;
 
@@ -100,10 +148,13 @@ export default function EditorPage() {
         onFileUpload={(fileCode) => setCode(fileCode)} 
       />
 
-      <div className="flex-grow flex w-full overflow-hidden">
+      <div 
+        ref={containerRef}
+        className={`flex-grow flex w-full overflow-hidden ${isResizing ? 'select-none' : ''}`}
+      >
         {/* Left Column: Editor & Terminal */}
         <motion.div
-          className="relative flex flex-col h-full border-r border-[#1f1f1f] transition-all duration-300 ease-in-out"
+          className={`relative flex flex-col h-full border-r border-[#1f1f1f] ${isResizing ? '' : 'transition-all duration-300 ease-in-out'}`}
           style={{ width: isRightPanelOpen ? `${100 - sidePanelWidth}%` : '100%' }}
         >
           <div className="flex-grow w-full relative min-h-0">
@@ -118,24 +169,31 @@ export default function EditorPage() {
 
           <AnimatePresence>
             {isRunnerVisible && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: `${bottomPanelHeight}%`, opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 120 }}
-                className="w-full border-t border-[#333] z-50 bg-[#0a0a0a] overflow-hidden flex-shrink-0"
-              >
-                <RunnerSection 
-                  output={output} 
-                  isRunning={isRunning} 
-                  onInput={sendInput} 
-                  onShellCommand={executeShellCommand}
-                  onClose={() => setIsRunnerVisible(false)} 
-                />
-              </motion.div>
+              <>
+                <Resizer direction="vertical" onMouseDown={handleVerticalResize} />
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: `${bottomPanelHeight}%`, opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={isResizing ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 120 }}
+                  className="w-full border-t border-[#333] z-50 bg-[#0a0a0a] overflow-hidden flex-shrink-0"
+                >
+                  <RunnerSection 
+                    output={output} 
+                    isRunning={isRunning} 
+                    onInput={sendInput} 
+                    onShellCommand={executeShellCommand}
+                    onClose={() => setIsRunnerVisible(false)} 
+                  />
+                </motion.div>
+              </>
             )}
           </AnimatePresence>
         </motion.div>
+
+        {isRightPanelOpen && (
+          <Resizer direction="horizontal" onMouseDown={handleHorizontalResize} />
+        )}
 
         {/* Right Column: Visualizer or AI */}
         <AnimatePresence mode="wait">
