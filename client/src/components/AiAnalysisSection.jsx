@@ -21,9 +21,9 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
 
     return (
         <div className="h-full bg-black flex flex-col border-l border-[#1f1f1f]">
-            <div className="px-5 py-4 bg-[#0a0a0a] text-base font-bold text-[#3b82f6] uppercase tracking-widest border-b border-[#1f1f1f] flex justify-between items-center">
-                <div className="flex items-center space-x-3">
-                    <Bot className="w-5 h-5 text-[#8b5cf6]" />
+            <div className="px-4 sm:px-5 py-3 sm:py-4 bg-[#0a0a0a] text-sm sm:text-base font-bold text-[#3b82f6] uppercase tracking-widest border-b border-[#1f1f1f] flex justify-between items-center">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-[#8b5cf6]" />
                     <span>AI Algorithm Analysis</span>
                 </div>
                 {onClose && (
@@ -54,7 +54,7 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
                         </div>
 
                         {/* Complexity Metrics */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-[#0a0a0a] p-4 rounded-xl shadow-lg border border-[#1f1f1f] flex flex-col items-center justify-center text-center">
                                 <Activity className="w-8 h-8 text-[#3b82f6] mb-2" />
                                 <span className="text-xs text-gray-500 uppercase tracking-widest mb-1 font-bold">Time Complexity</span>

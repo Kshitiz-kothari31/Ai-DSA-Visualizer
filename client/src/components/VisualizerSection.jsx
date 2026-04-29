@@ -256,7 +256,7 @@ const VisualizerSection = ({
 
             {/* Render Area wrapped in Xwrapper for arrows */}
             <Xwrapper>
-                <div className="flex-grow overflow-auto p-6 space-y-6 custom-scrollbar relative">
+            <div className="flex-grow overflow-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar relative">
                     {Object.keys(variables).length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-zinc-600">
                              <Database size={40} className="mb-3 opacity-20" />
@@ -298,8 +298,8 @@ const VisualizerSection = ({
                             className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:h-2 transition-all"
                         />
                     </div>
-                    <div className="flex items-center justify-between text-zinc-500 font-mono text-[10px]">
-                        <span className="bg-zinc-900 px-2 py-1 rounded">STEP {stateList.length === 0 ? 0 : currentStateIndex + 1} / {stateList.length}</span>
+                    <div className="flex flex-col sm:flex-row items-center justify-between text-zinc-500 font-mono text-[10px] gap-4 sm:gap-0 mt-4 sm:mt-0">
+                        <span className="bg-zinc-900 px-2 py-1 rounded w-full sm:w-auto text-center">STEP {stateList.length === 0 ? 0 : currentStateIndex + 1} / {stateList.length}</span>
                         <div className="flex items-center gap-4 text-zinc-400">
                             <button onClick={() => setCurrentStateIndex(Math.max(0, currentStateIndex - 1))} className="hover:text-sky-500 transition-colors p-1"><SkipBack size={14} /></button>
                             <button 

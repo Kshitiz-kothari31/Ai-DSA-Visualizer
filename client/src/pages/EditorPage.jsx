@@ -7,6 +7,7 @@ import AiAnalysisSection from '../components/AiAnalysisSection';
 import Resizer from '../components/Resizer';
 import { useExecution } from '../hooks/useExecution';
 import { useAiAnalysis } from '../hooks/useAiAnalysis';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal } from 'lucide-react';
 
@@ -37,6 +38,7 @@ export default function EditorPage() {
   const [sidePanelWidth, setSidePanelWidth] = useState(50); // Percentage
   const [bottomPanelHeight, setBottomPanelHeight] = useState(40); // Percentage
   const [isResizing, setIsResizing] = useState(false);
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   // --- Logic & Effects ---
 
@@ -150,12 +152,15 @@ export default function EditorPage() {
 
       <div 
         ref={containerRef}
-        className={`flex-grow flex w-full overflow-hidden ${isResizing ? 'select-none' : ''}`}
+        className={`flex-grow flex flex-col lg:flex-row w-full overflow-hidden ${isResizing ? 'select-none' : ''}`}
       >
         {/* Left Column: Editor & Terminal */}
         <motion.div
-          className={`relative flex flex-col h-full border-r border-[#1f1f1f] ${isResizing ? '' : 'transition-all duration-300 ease-in-out'}`}
-          style={{ width: isRightPanelOpen ? `${100 - sidePanelWidth}%` : '100%' }}
+          className={`relative flex flex-col border-b lg:border-b-0 lg:border-r border-[#1f1f1f] ${isResizing ? '' : 'transition-all duration-300 ease-in-out'}`}
+          style={{ 
+            width: isDesktop && isRightPanelOpen ? `${100 - sidePanelWidth}%` : '100%',
+            height: !isDesktop && isRightPanelOpen ? '50%' : '100%'
+          }}
         >
           <div className="flex-grow w-full relative min-h-0">
             <EditorSection
@@ -191,7 +196,7 @@ export default function EditorPage() {
           </AnimatePresence>
         </motion.div>
 
-        {isRightPanelOpen && (
+        {isDesktop && isRightPanelOpen && (
           <Resizer direction="horizontal" onMouseDown={handleHorizontalResize} />
         )}
 
@@ -199,12 +204,15 @@ export default function EditorPage() {
         <AnimatePresence mode="wait">
           {isRightPanelOpen && (
             <motion.div
-              initial={{ x: "100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "100%", opacity: 0 }}
+              initial={{ x: isDesktop ? "100%" : 0, y: isDesktop ? 0 : "100%", opacity: 0 }}
+              animate={{ x: 0, y: 0, opacity: 1 }}
+              exit={{ x: isDesktop ? "100%" : 0, y: isDesktop ? 0 : "100%", opacity: 0 }}
               transition={{ duration: 0.3 }}
-              style={{ width: `${sidePanelWidth}%` }}
-              className="relative h-full bg-[#080808] border-l border-[#1f1f1f] overflow-hidden flex-shrink-0"
+              style={{ 
+                width: isDesktop ? `${sidePanelWidth}%` : '100%',
+                height: !isDesktop ? '50%' : '100%'
+              }}
+              className="relative bg-[#080808] border-t lg:border-t-0 lg:border-l border-[#1f1f1f] overflow-hidden flex-shrink-0"
             >
               <div className="h-full w-full">
                 {isVisualizerVisible ? (

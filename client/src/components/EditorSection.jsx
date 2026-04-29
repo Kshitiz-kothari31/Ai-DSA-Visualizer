@@ -6,8 +6,8 @@ export default function EditorSection({ code, language, onLanguageChange, onChan
     return (
         <div className="h-full w-full flex flex-col bg-black">
             <div className="px-4 py-2 border-b border-[#1f1f1f] bg-[#0a0a0a] flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                    <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Code Editor</span>
+                <div className="flex items-center space-x-2 sm:space-x-4">
+                    <span className="text-sm font-bold text-gray-400 uppercase tracking-widest hidden sm:inline">Code Editor</span>
                     <select 
                         value={language} 
                         onChange={(e) => onLanguageChange(e.target.value)}
