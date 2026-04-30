@@ -11,7 +11,10 @@ export function useExecution() {
 
     // Initialize Socket
     useEffect(() => {
-        const baseUrl = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:5001';
+        let baseUrl = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:5001';
+        // Cleanup: Remove trailing slash if present
+        baseUrl = baseUrl.replace(/\/$/, "");
+        
         console.log(`[Socket] Connecting to: ${baseUrl}`);
 
         socketRef.current = io(baseUrl, {
@@ -29,8 +32,29 @@ export function useExecution() {
         });
 
         socketRef.current.on('terminal:output', ({ data }) => {
-            const newLines = data.split('\n');
-            setOutput(prev => [...prev, ...newLines.filter(l => l !== '')]);
+            setOutput(prev => {
+                if (prev.length === 0) return [data];
+                
+                // If the data contains newlines, split it and append
+                if (data.includes('\n')) {
+                    const parts = data.split('\n');
+                    const next = [...prev];
+                    // Append the first part to the last line
+                    next[next.length - 1] += parts[0];
+                    // Add subsequent parts as new lines
+                    for (let i = 1; i < parts.length; i++) {
+                        if (parts[i] !== '' || i < parts.length - 1) {
+                            next.push(parts[i]);
+                        }
+                    }
+                    return next;
+                } else {
+                    // Just append to the last line
+                    const next = [...prev];
+                    next[next.length - 1] += data;
+                    return next;
+                }
+            });
         });
 
         socketRef.current.on('terminal:exit', ({ code }) => {

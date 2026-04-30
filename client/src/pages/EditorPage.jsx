@@ -102,7 +102,7 @@ export default function EditorPage() {
 
   const handleVisualize = useCallback(() => {
     setIsVisualizerVisible(true);
-    setIsRunnerVisible(true); // Open terminal to show progress/logs
+    // Removed auto-open of terminal per user request
     executeCode(code, language, 'visualize');
   }, [code, language, executeCode]);
 
