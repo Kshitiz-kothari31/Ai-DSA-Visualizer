@@ -38,31 +38,48 @@ const ArrayViewer = ({ data, rootVariables }) => {
     // Find variables that act as pointers (i.e., integers that match the index)
     const pointersForIndex = (idx) => {
         const pointers = [];
+        const commonPointerNames = ['i', 'j', 'k', 'left', 'right', 'mid', 'low', 'high', 'ptr', 'curr', 'start', 'end'];
+        
         for (const [vName, vVal] of Object.entries(rootVariables)) {
-            if (isPrimitive(vVal) && typeof vVal === 'number' && vVal === idx) {
-                // Ignore the array's own name or other arrays
-                if (isArray(vVal)) continue;
+            if (commonPointerNames.includes(vName.toLowerCase()) && typeof vVal === 'number' && vVal === idx) {
                 pointers.push(vName);
             }
         }
         return pointers;
     };
 
+    const POINTER_COLORS = {
+        left: 'bg-emerald-500',
+        low: 'bg-emerald-500',
+        right: 'bg-rose-500',
+        high: 'bg-rose-500',
+        mid: 'bg-amber-500',
+        i: 'bg-sky-500',
+        j: 'bg-indigo-500',
+    };
+
     return (
-        <div className="flex items-end gap-2 py-6 px-4" id={arrayId}>
+        <div className="flex items-end gap-2 py-10 px-4" id={arrayId}>
             {actualData.map((item, idx) => {
                 const pointers = pointersForIndex(idx);
                 return (
                     <div key={idx} className="flex flex-col items-center gap-1.5 relative group" id={`obj-${item?.__id || ''}`}>
-                        {/* Step-by-Step Pointers / Function Loop Variables */}
+                        {/* Dynamic Pointer Arrows */}
                         {pointers.length > 0 && (
-                            <div className="absolute bottom-full mb-1 flex flex-col-reverse items-center gap-1">
-                                <div className="w-0.5 h-2 bg-sky-500/50 rounded" />
-                                {pointers.map(p => (
-                                    <span key={p} className="text-[9px] bg-sky-500 text-white px-1 py-0.5 rounded-sm font-mono shadow-[0_0_8px_rgba(14,165,233,0.4)]">
-                                        {p}
-                                    </span>
-                                ))}
+                            <div className="absolute bottom-full mb-2 flex flex-col-reverse items-center">
+                                {/* Arrow Head */}
+                                <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-zinc-400 mt-1" />
+                                {/* Pointer Labels */}
+                                <div className="flex flex-col gap-1 items-center">
+                                    {pointers.map(p => {
+                                        const color = POINTER_COLORS[p.toLowerCase()] || 'bg-sky-500';
+                                        return (
+                                            <span key={p} className={`${color} text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg transform transition-transform hover:scale-110 uppercase tracking-tighter`}>
+                                                {p}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                         
@@ -281,8 +298,12 @@ const VisualizerSection = ({
                         </div>
                     ) : (
                         Object.entries(variables).map(([name, value]) => {
-                            // Optionally hide internal system variables if they bleed through
+                            // Optionally hide internal system variables
                             if (name.startsWith('__')) return null;
+
+                            // Hide common pointers that are already displayed on the array
+                            const commonPointerNames = ['i', 'j', 'k', 'left', 'right', 'mid', 'low', 'high', 'ptr', 'curr', 'start', 'end'];
+                            if (commonPointerNames.includes(name.toLowerCase())) return null;
 
                             return (
                                 <div key={name} className="animate-in fade-in slide-in-from-bottom-2 duration-500 bg-zinc-900/30 p-3 rounded-lg border border-zinc-800/80 mb-3 backdrop-blur-sm relative shadow-lg overflow-x-auto">
