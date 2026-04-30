@@ -98,18 +98,17 @@ def stream_output(sid, process, files_to_cleanup):
                         json_str = buffer.split('__VISUALIZE__:')[1].strip()
                         frame_data = json.loads(json_str)
                         socketio.emit('terminal:visualize-frame', frame_data, room=sid)
-                    except:
-                        # Fallback: display as text if JSON parsing fails
+                    except Exception as e:
+                        print(f"JSON Parse Error: {str(e)}")
                         socketio.emit('terminal:output', {'data': buffer}, room=sid)
                 else:
-                    # Flush any remaining buffer as normal text
                     if buffer:
                         socketio.emit('terminal:output', {'data': buffer}, room=sid)
                 buffer = ""
             else:
-                # If the current buffer definitely isn't the start of a visualization tag,
-                # send the characters immediately to the UI for "live" interaction.
-                if not "__VISUALIZE__".startswith(buffer):
+                # Heuristic: if the buffer is potentially building a tag, don't flush it yet.
+                # If it's NOT a potential tag, flush it to the UI for "live" feel.
+                if "__VISUALIZE__:" not in buffer and not "__VISUALIZE__:".startswith(buffer):
                     socketio.emit('terminal:output', {'data': buffer}, room=sid)
                     buffer = ""
         
