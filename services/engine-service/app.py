@@ -106,9 +106,12 @@ def stream_output(sid, process, files_to_cleanup):
                         socketio.emit('terminal:output', {'data': buffer}, room=sid)
                 buffer = ""
             else:
-                # Heuristic: if the buffer is potentially building a tag, don't flush it yet.
-                # If it's NOT a potential tag, flush it to the UI for "live" feel.
-                if "__VISUALIZE__:" not in buffer and not "__VISUALIZE__:".startswith(buffer):
+                # HARD LOCK: If we are building a visualization frame, DO NOT flush to terminal.
+                # Wait until the newline flushes it to the correct 'visualize-frame' channel.
+                if "__VISUALIZE__" in buffer or "__VISUALIZE__".startswith(buffer):
+                    continue
+                
+                if buffer:
                     socketio.emit('terminal:output', {'data': buffer}, room=sid)
                     buffer = ""
         
