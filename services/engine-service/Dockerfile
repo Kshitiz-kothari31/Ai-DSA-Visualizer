@@ -1,5 +1,5 @@
-# Use a newer, more stable Python image
-FROM python:3.10-slim
+# Use a modern Python version (3.11) to support latest library requirements
+FROM python:3.11-slim
 
 # Install System Dependencies with increased reliability
 RUN apt-get update --fix-missing && apt-get install -y \
