@@ -1,10 +1,11 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim-buster
+# Use a newer, more stable Python image
+FROM python:3.10-slim
 
-# Install System Dependencies (Required for C++ Compilation and Tracing)
-RUN apt-get update && apt-get install -y \
+# Install System Dependencies with increased reliability
+RUN apt-get update --fix-missing && apt-get install -y \
     g++ \
     gdb \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
