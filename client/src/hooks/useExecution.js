@@ -9,33 +9,45 @@ export function useExecution() {
     const inputResolver = useRef(null);
     const socketRef = useRef(null);
 
-    // Initialize Socket for Production
+    // Initialize Socket
     useEffect(() => {
-        if (!import.meta.hot || import.meta.env.PROD) {
-            const baseUrl = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:5001';
-            socketRef.current = io(baseUrl);
+        const baseUrl = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:5001';
+        console.log(`[Socket] Connecting to: ${baseUrl}`);
 
-            socketRef.current.on('terminal:output', ({ data }) => {
-                const newLines = data.split('\n');
-                setOutput(prev => [...prev, ...newLines.filter(l => l !== '')]);
-            });
+        socketRef.current = io(baseUrl, {
+            transports: ['websocket', 'polling'],
+            reconnection: true
+        });
 
-            socketRef.current.on('terminal:exit', ({ code }) => {
-                setIsRunning(false);
-                if (code !== undefined) setOutput(prev => [...prev, `Process exited with code ${code}`]);
-            });
+        socketRef.current.on('connect', () => {
+            console.log('[Socket] Connected successfully!');
+        });
 
-            socketRef.current.on('terminal:visualize-frame', (frame) => {
-                setStateList(prev => [...prev, {
-                    variables: frame.variables, // Robust tracers already provided snapshots
-                    line: frame.line
-                }]);
-            });
+        socketRef.current.on('connect_error', (err) => {
+            console.error('[Socket] Connection error:', err.message);
+            setOutput(prev => [...prev, `Backend Connection Error: ${err.message}. Check if VITE_ENGINE_API_URL is set correctly.`]);
+        });
 
-            return () => {
-                if (socketRef.current) socketRef.current.disconnect();
-            };
-        }
+        socketRef.current.on('terminal:output', ({ data }) => {
+            const newLines = data.split('\n');
+            setOutput(prev => [...prev, ...newLines.filter(l => l !== '')]);
+        });
+
+        socketRef.current.on('terminal:exit', ({ code }) => {
+            setIsRunning(false);
+            if (code !== undefined) setOutput(prev => [...prev, `Process exited with code ${code}`]);
+        });
+
+        socketRef.current.on('terminal:visualize-frame', (frame) => {
+            setStateList(prev => [...prev, {
+                variables: frame.variables,
+                line: frame.line
+            }]);
+        });
+
+        return () => {
+            if (socketRef.current) socketRef.current.disconnect();
+        };
     }, []);
 
     const requestInputFromUI = useCallback(() => {
