@@ -7,19 +7,27 @@ import os
 class GDBTracer:
     def __init__(self, executable):
         self.executable = executable
-        # Start GDB in quiet mode, no initialization files, console interpreter
-        self.process = subprocess.Popen(
-            ['gdb', '-q', '-nx', '--interpreter=console', executable],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1
-        )
+        try:
+            # Start GDB in quiet mode, no initialization files, console interpreter
+            self.process = subprocess.Popen(
+                ['gdb', '-q', '-nx', '--interpreter=console', executable],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1
+            )
+        except Exception as e:
+            print(f"FATAL: GDB failed to start: {str(e)}")
+            sys.stdout.flush()
+            sys.exit(1)
         self.visited = {} # address -> id
         self.id_counter = 1000
 
     def send_command(self, cmd):
+        if not self.process or self.process.poll() is not None:
+            return ["Error: GDB process is not running"]
+
         if cmd:
             self.process.stdin.write(cmd + '\n')
             self.process.stdin.flush()
@@ -27,7 +35,11 @@ class GDBTracer:
         output = ""
         while True:
             char = self.process.stdout.read(1)
-            if not char: break
+            if not char: 
+                # If we get no char but process is alive, wait a bit
+                if self.process.poll() is None:
+                    continue
+                break
             output += char
             if output.endswith('(gdb) '):
                 break
@@ -136,7 +148,19 @@ class GDBTracer:
         self.send_command('set print address on')
         self.send_command('set print pretty off')
         self.send_command('break main')
-        self.send_command('run')
+        run_out = self.send_command('run')
+        
+        if any("Operation not permitted" in l for l in run_out):
+            # This is the common 'ptrace' restriction on cloud providers
+            error_msg = "Visualization Failed: Cloud provider restricted debugger permissions (ptrace). Try a different host like Railway or a local environment."
+            frame_data = {
+                "variables": {"Error": error_msg},
+                "line": 1,
+                "event": "error"
+            }
+            print(f"__VISUALIZE__:{json.dumps(frame_data)}")
+            sys.stdout.flush()
+            return
         
         # Main Loop
         limit = 300 # Step limit
