@@ -21,10 +21,10 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
 
     return (
         <div className="h-full bg-black flex flex-col border-l border-[#1f1f1f]">
-            <div className="px-4 sm:px-5 py-3 sm:py-4 bg-[#0a0a0a] text-sm sm:text-base font-bold text-[#3b82f6] uppercase tracking-widest border-b border-[#1f1f1f] flex justify-between items-center">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-[#8b5cf6]" />
-                    <span>AI Algorithm Analysis</span>
+            <div className="px-4 py-2 bg-[#0a0a0a] border-b border-[#1f1f1f] flex justify-between items-center">
+                <div className="flex items-center space-x-2 text-zinc-400">
+                    <Bot className="w-4 h-4 text-[#8b5cf6]" />
+                    <span className="text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.2em]">AI Algorithm Analysis</span>
                 </div>
                 {onClose && (
                     <button onClick={onClose} className="p-1.5 hover:bg-[#1a1a1a] rounded text-gray-500 transition-colors">
@@ -46,9 +46,9 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
                 ) : (
                     <div className="space-y-8 animate-in fade-in duration-500">
                         {/* Summary */}
-                        <div className="bg-[#0a0a0a] p-5 rounded-lg shadow-lg border border-[#1f1f1f]">
-                            <h3 className="text-base font-bold text-gray-400 uppercase tracking-widest mb-3">Algorithm Recognition</h3>
-                            <p className="text-base text-gray-300 leading-relaxed">
+                        <div className="bg-[#0a0a0a] p-4 lg:p-5 rounded-lg shadow-lg border border-[#1f1f1f]">
+                            <h3 className="text-xs lg:text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Algorithm Recognition</h3>
+                            <p className="text-sm lg:text-base text-gray-300 leading-relaxed">
                                 {analysisData.summary}
                             </p>
                         </div>
@@ -56,20 +56,20 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
                         {/* Complexity Metrics */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-[#0a0a0a] p-4 rounded-xl shadow-lg border border-[#1f1f1f] flex flex-col items-center justify-center text-center">
-                                <Activity className="w-8 h-8 text-[#3b82f6] mb-2" />
-                                <span className="text-xs text-gray-500 uppercase tracking-widest mb-1 font-bold">Time Complexity</span>
-                                <span className="text-2xl font-bold font-mono text-white">{analysisData.timeComplexity || 'O(N)'}</span>
+                                <Activity className="w-6 h-6 lg:w-8 lg:h-8 text-[#3b82f6] mb-2" />
+                                <span className="text-[10px] lg:text-xs text-gray-500 uppercase tracking-widest mb-1 font-bold">Time Complexity</span>
+                                <span className="text-xl lg:text-2xl font-bold font-mono text-white">{analysisData.timeComplexity || 'O(N)'}</span>
                             </div>
                             <div className="bg-[#0a0a0a] p-4 rounded-xl shadow-lg border border-[#1f1f1f] flex flex-col items-center justify-center text-center">
-                                <HardDrive className="w-8 h-8 text-[#8b5cf6] mb-2" />
-                                <span className="text-xs text-gray-500 uppercase tracking-widest mb-1 font-bold">Space Complexity</span>
-                                <span className="text-2xl font-bold font-mono text-white">{analysisData.spaceComplexity || 'O(1)'}</span>
+                                <HardDrive className="w-6 h-6 lg:w-8 lg:h-8 text-[#8b5cf6] mb-2" />
+                                <span className="text-[10px] lg:text-xs text-gray-500 uppercase tracking-widest mb-1 font-bold">Space Complexity</span>
+                                <span className="text-xl lg:text-2xl font-bold font-mono text-white">{analysisData.spaceComplexity || 'O(1)'}</span>
                             </div>
                         </div>
 
                         {/* Performance Insight */}
                         {analysisData.insight && (
-                            <div className={`p-5 rounded-lg shadow-lg border ${insightColor} text-base font-medium leading-relaxed`}>
+                            <div className={`p-4 lg:p-5 rounded-lg shadow-lg border ${insightColor} text-sm lg:text-base font-medium leading-relaxed`}>
                                 {analysisData.insight}
                             </div>
                         )}
@@ -87,7 +87,7 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
                                     {isStressTest ? 'Stress Test ON' : 'Stress Test OFF'}
                                 </button>
                             </div>
-                            <div className="h-[250px] w-full">
+                            <div className="h-[300px] lg:h-[400px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart
                                         data={isStressTest ? analysisData.stressChartData : analysisData.chartData}

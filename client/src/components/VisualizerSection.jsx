@@ -1,21 +1,22 @@
 import React from 'react';
 import { Play, Pause, SkipBack, SkipForward, X, Database, Zap } from 'lucide-react';
-import Xarrow, { Xwrapper } from 'react-xarrows';
+import XarrowRaw, { Xwrapper } from 'react-xarrows';
+const Xarrow = XarrowRaw.default || XarrowRaw;
 
 // --- Type Checking Heuristics ---
 const isPrimitive = (val) => val === null || val === undefined || typeof val !== 'object';
-const isArray = (val) => Array.isArray(val);
+const isArray = (val) => Array.isArray(val) || (val && val.__type === 'array');
 const getKeys = (val) => Object.keys(val).map(k => k.toLowerCase());
 
 const isLinkedListNode = (val) => {
-    if (isArray(val) || isPrimitive(val)) return false;
+    if (isArray(val) || isPrimitive(val) || val.__ref) return false;
     const keys = getKeys(val);
     return (keys.includes('val') || keys.includes('value') || keys.includes('data')) && 
            (keys.includes('next') || keys.includes('prev'));
 };
 
 const isTreeNode = (val) => {
-    if (isArray(val) || isPrimitive(val)) return false;
+    if (isArray(val) || isPrimitive(val) || val.__ref) return false;
     const keys = getKeys(val);
     return (keys.includes('val') || keys.includes('value') || keys.includes('data')) && 
            (keys.includes('left') || keys.includes('right'));
@@ -31,6 +32,9 @@ const PrimitiveViewer = ({ data }) => {
 };
 
 const ArrayViewer = ({ data, rootVariables }) => {
+    const actualData = Array.isArray(data) ? data : (data?.value || []);
+    const arrayId = data?.__id ? `obj-${data.__id}` : '';
+
     // Find variables that act as pointers (i.e., integers that match the index)
     const pointersForIndex = (idx) => {
         const pointers = [];
@@ -45,8 +49,8 @@ const ArrayViewer = ({ data, rootVariables }) => {
     };
 
     return (
-        <div className="flex items-end gap-2 py-6 px-4">
-            {data.map((item, idx) => {
+        <div className="flex items-end gap-2 py-6 px-4" id={arrayId}>
+            {actualData.map((item, idx) => {
                 const pointers = pointersForIndex(idx);
                 return (
                     <div key={idx} className="flex flex-col items-center gap-1.5 relative group" id={`obj-${item?.__id || ''}`}>
@@ -70,7 +74,7 @@ const ArrayViewer = ({ data, rootVariables }) => {
                     </div>
                 );
             })}
-            {data.length === 0 && <span className="text-zinc-600 font-mono text-sm italic">Empty Array</span>}
+            {actualData.length === 0 && <span className="text-zinc-600 font-mono text-sm italic">Empty Array</span>}
         </div>
     );
 };
@@ -80,14 +84,22 @@ const LinkedListViewer = ({ head, path }) => {
     let curr = head;
     let limit = 20; // safety against infinit loops
     const visited = new Set();
-    let hasCycle = false;
+    let cycleTargetNodeId = null;
+    let cycleSourceNodeId = null;
 
     while (curr && !isPrimitive(curr) && limit > 0) {
-        if (visited.has(curr)) {
-            hasCycle = true;
+        if (curr.__ref) {
+            // It's a cycle pointing back to an already visited ID
+            cycleTargetNodeId = `obj-${curr.__ref}`;
+            cycleSourceNodeId = `ll-${path}-${nodes.length - 1}`;
             break;
         }
-        visited.add(curr);
+        if (visited.has(curr.__id || curr)) {
+            cycleTargetNodeId = curr.__id ? `obj-${curr.__id}` : `ll-${path}-0`;
+            cycleSourceNodeId = `ll-${path}-${nodes.length - 1}`;
+            break;
+        }
+        visited.add(curr.__id || curr);
         nodes.push(curr);
         curr = curr.next !== undefined ? curr.next : curr.Next;
         limit--;
@@ -115,7 +127,7 @@ const LinkedListViewer = ({ head, path }) => {
                         )}
 
                         {/* Null Terminator */}
-                        {i === nodes.length - 1 && !hasCycle && (!n.next && !n.Next) && (
+                        {i === nodes.length - 1 && !cycleTargetNodeId && (!n.next && !n.Next) && (
                             <>
                                 <div id={`ll-${path}-null`} className="absolute -right-16 top-1/2 -translate-y-1/2 text-zinc-500 font-mono text-xs italic bg-zinc-900 px-2 rounded">∅</div>
                                 <Xarrow start={nodeId} end={`ll-${path}-null`} showHead={true} color="#52525b" strokeWidth={2} path="straight" dashness={true} startAnchor="right" endAnchor="left" />
@@ -125,7 +137,12 @@ const LinkedListViewer = ({ head, path }) => {
                 );
             })}
             
-            {hasCycle && <span className="text-rose-500 text-xs font-mono font-bold ml-4 border border-rose-500 px-2 py-1 rounded bg-rose-900/20">⟲ Cycle Detected</span>}
+            {cycleTargetNodeId && cycleSourceNodeId && (
+                <>
+                    <span className="text-rose-500 text-xs font-mono font-bold ml-4 border border-rose-500 px-2 py-1 rounded bg-rose-900/20">⟲ Cycle</span>
+                    <Xarrow start={cycleSourceNodeId} end={cycleTargetNodeId} showHead={true} color="#f43f5e" strokeWidth={2} dashness={true} path="grid" />
+                </>
+            )}
             {limit === 0 && <span className="text-zinc-500 text-xs ml-4">(Truncated)</span>}
         </div>
     );
@@ -247,7 +264,7 @@ const VisualizerSection = ({
             <div className="flex items-center justify-between p-3 border-b border-zinc-900 bg-[#0a0a0a]">
                 <div className="flex items-center gap-2">
                     <Zap size={14} className="text-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.4)]" />
-                    <span className="font-bold text-[10px] tracking-widest text-zinc-400 uppercase">DSA Visualizer</span>
+                    <span className="text-[11px] lg:text-[13px] font-bold text-zinc-400 uppercase tracking-[0.2em]">DSA Visualizer</span>
                 </div>
                 <button onClick={onClose} className="hover:bg-zinc-800 p-1 rounded transition-colors text-zinc-500 hover:text-white">
                     <X size={14} />
@@ -298,15 +315,15 @@ const VisualizerSection = ({
                             className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:h-2 transition-all"
                         />
                     </div>
-                    <div className="flex flex-col sm:flex-row items-center justify-between text-zinc-500 font-mono text-[10px] gap-4 sm:gap-0 mt-4 sm:mt-0">
-                        <span className="bg-zinc-900 px-2 py-1 rounded w-full sm:w-auto text-center">STEP {stateList.length === 0 ? 0 : currentStateIndex + 1} / {stateList.length}</span>
+                    <div className="flex flex-col sm:flex-row items-center justify-between text-zinc-500 font-mono text-sm gap-4 sm:gap-0 mt-4 sm:mt-0">
+                        <span className="bg-zinc-900 px-3 py-1.5 rounded w-full sm:w-auto text-center lg:text-xs">STEP {stateList.length === 0 ? 0 : currentStateIndex + 1} / {stateList.length}</span>
                         <div className="flex items-center gap-4 text-zinc-400">
                             <button onClick={() => setCurrentStateIndex(Math.max(0, currentStateIndex - 1))} className="hover:text-sky-500 transition-colors p-1"><SkipBack size={14} /></button>
                             <button 
                                 onClick={() => setIsPlaying(!isPlaying)} 
-                                className="bg-sky-600 hover:bg-sky-500 p-2.5 rounded-full transition-all shadow-[0_0_12px_rgba(14,165,233,0.4)] hover:shadow-[0_0_15px_rgba(14,165,233,0.6)] hover:scale-105 active:scale-95"
+                                className="bg-sky-600 hover:bg-sky-500 p-3.5 rounded-full transition-all shadow-[0_0_12px_rgba(14,165,233,0.4)] hover:shadow-[0_0_15px_rgba(14,165,233,0.6)] hover:scale-105 active:scale-95"
                             >
-                                {isPlaying ? <Pause size={14} fill="white" className="text-white"/> : <Play size={14} fill="white" className="text-white"/>}
+                                {isPlaying ? <Pause size={18} fill="white" className="text-white"/> : <Play size={18} fill="white" className="text-white"/>}
                             </button>
                             <button onClick={() => setCurrentStateIndex(Math.min(stateList.length - 1, currentStateIndex + 1))} className="hover:text-sky-500 transition-colors p-1"><SkipForward size={14} /></button>
                         </div>

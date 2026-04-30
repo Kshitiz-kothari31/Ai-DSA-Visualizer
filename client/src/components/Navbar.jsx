@@ -26,20 +26,20 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
     };
 
     return (
-        <nav className="w-full bg-black shadow-lg px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between border-b border-[#1f1f1f]">
-            <div className="flex items-center space-x-4 sm:space-x-8">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                    <Code2 className="w-6 h-6 sm:w-7 sm:h-7 text-[#3b82f6]" />
-                    <h1 className="text-lg sm:text-xl font-bold text-white tracking-widest">Koda</h1>
+        <nav className="w-full bg-black shadow-lg px-2 sm:px-8 py-2 sm:py-4 flex items-center justify-between border-b border-[#1f1f1f]">
+            <div className="flex items-center space-x-2 sm:space-x-8">
+                <div className="flex items-center space-x-1.5 sm:space-x-4">
+                    <Code2 className="w-5 h-5 sm:w-8 sm:h-8 text-[#3b82f6]" />
+                    <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-white tracking-[0.1em]">Koda</h1>
                 </div>
 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center">
                     <button
                         onClick={triggerFileInput}
-                        className="flex items-center space-x-1 text-sm text-gray-400 hover:text-[#3b82f6] font-medium transition-colors"
+                        className="flex items-center space-x-1 text-[10px] sm:text-sm text-gray-400 hover:text-[#3b82f6] font-medium transition-colors"
                     >
-                        <Upload className="w-4 h-4" />
-                        <span className="text-xs sm:text-sm hidden sm:inline">Upload File</span>
+                        <Upload className="w-4 h-4 sm:w-5 h-5" />
+                        <span className="hidden sm:inline lg:text-base">Upload File</span>
                         <input
                             type="file"
                             ref={fileInputRef}
@@ -50,28 +50,28 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
                 </div>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
                 <button
                     onClick={onVisualize}
-                    className="flex items-center space-x-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all border border-[#333] hover:border-[#3b82f6] shadow-sm"
+                    className="flex items-center space-x-1.5 sm:space-x-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white px-2.5 py-1.5 sm:px-6 sm:py-2.5 rounded-md text-[10px] sm:text-sm lg:text-base font-bold transition-all border border-[#333] hover:border-[#3b82f6] shadow-sm whitespace-nowrap"
                 >
-                    <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-[#3b82f6] text-[#3b82f6]" />
-                    <span className="hidden sm:inline">Visualize</span>
+                    <Play className="w-3 h-3 sm:w-5 sm:h-5 fill-[#3b82f6] text-[#3b82f6]" />
+                    <span>Visualize</span>
                 </button>
                 <button
                     onClick={onAiAnalysis}
-                    className="flex items-center space-x-2 bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] hover:brightness-110 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all shadow-[0_0_15px_rgba(59,130,246,0.5)] transform hover:-translate-y-0.5"
+                    className="flex items-center space-x-1.5 sm:space-x-3 bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] hover:brightness-110 text-white px-2.5 py-1.5 sm:px-6 sm:py-2.5 rounded-md text-[10px] sm:text-sm lg:text-base font-bold transition-all shadow-[0_0_15px_rgba(59,130,246,0.5)] transform hover:-translate-y-0.5 whitespace-nowrap"
                 >
-                    <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">AI Analysis</span>
+                    <Bot className="w-3 h-3 sm:w-5 sm:h-5" />
+                    <span>AI Analysis</span>
                 </button>
-                <div className="w-px h-6 bg-gray-700 mx-2"></div>
+                <div className="hidden sm:block w-px h-6 bg-gray-700 mx-1"></div>
                 <button
                     onClick={logout}
                     title="Log Out"
-                    className="flex items-center justify-center bg-transparent border border-red-500/50 hover:bg-red-500/20 text-red-500 p-2 rounded-md transition-colors"
+                    className="flex items-center justify-center bg-transparent border border-red-500/50 hover:bg-red-500/20 text-red-500 p-1.5 sm:p-2.5 rounded-md transition-colors"
                 >
-                    <LogOut className="w-5 h-5" />
+                    <LogOut className="w-4 h-4 sm:w-6 sm:h-6" />
                 </button>
             </div>
         </nav>

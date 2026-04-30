@@ -12,8 +12,8 @@ const Resizer = ({ direction, onMouseDown, className = "" }) => {
     <div
       onMouseDown={onMouseDown}
       className={`
-        ${isHorizontal ? 'w-1.5 cursor-col-resize h-full' : 'h-1.5 cursor-row-resize w-full'}
-        bg-transparent hover:bg-blue-500/30 transition-colors
+        ${isHorizontal ? 'w-2 cursor-col-resize h-full' : 'h-2 cursor-row-resize w-full'}
+        bg-transparent hover:bg-blue-500/20 transition-colors
         flex items-center justify-center group z-[100]
         ${className}
       `}

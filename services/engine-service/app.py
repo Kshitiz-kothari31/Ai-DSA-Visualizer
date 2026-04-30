@@ -46,9 +46,12 @@ def get_chart_data(tc, is_stress=False):
 def analyze():
     data = request.json
     code = data.get('code', '')
-    language = data.get('language', 'javascript')
+    language = data.get('language', 'cpp')
+    print(f"Analyzing {language} code...")
+    
     tc, tc_reason = engine.predict(code)
     sc, sc_reason = engine.predict_space(code)
+    print(f"Prediction: Time={tc}, Space={sc}")
     
     if "n³" in tc or "2^n" in tc or "n^3" in tc:
         insight = f"CRITICAL WARNING: At n=10,000, {tc} requires an astronomical number of operations. It will cause severe lag or crashes on large datasets."
@@ -148,57 +151,25 @@ def handle_run(data):
     files_to_cleanup = []
     
     try:
-        if language == 'javascript':
-            fd, path = tempfile.mkstemp(suffix='.js', prefix=f'script_{unique_id}_')
-            os.write(fd, code.encode())
-            os.close(fd)
-            files_to_cleanup.append(path)
-            cmd = ['node', path]
-            
-        elif language == 'python':
-            fd, path = tempfile.mkstemp(suffix='.py', prefix=f'script_{unique_id}_')
-            os.write(fd, code.encode())
-            os.close(fd)
-            files_to_cleanup.append(path)
-            
-            if mode == 'visualize':
-                tracer_path = os.path.join(os.getcwd(), 'scripts', 'py_tracer.py')
-                cmd = ['python3', '-u', tracer_path, path]
-            else:
-                cmd = ['python3', '-u', path]
-                
-        elif language == 'cpp':
-            src_file = os.path.join(temp_dir, f'prog_{unique_id}.cpp')
-            exe_file = os.path.join(temp_dir, f'prog_{unique_id}.out')
-            files_to_cleanup.extend([src_file, exe_file])
-            
-            final_code = code
-            if mode == 'visualize':
-                helper = '#include <iostream>\n#include <string>\n#include <vector>\n#define VISUALIZE(name, val) std::cout << "__VISUALIZE__:{\\"variables\\":{\\"" << #name << "\\":" << val << "}}" << std::endl;\n'
-                final_code = helper + code
-            
-            with open(src_file, 'w') as f: f.write(final_code)
-            
-            # Compile
-            compile_res = subprocess.run(['g++', src_file, '-o', exe_file], capture_output=True, text=True)
-            if compile_res.returncode != 0:
-                emit('terminal:output', {'data': compile_res.stderr})
-                emit('terminal:exit', {'code': 1})
-                return
-            
-            cmd = [exe_file]
-
-        elif language == 'java':
-            # Java is a bit tricky with filenames (must match class name)
-            # For simplicity, we assume Main class or use a basic runner
-            path = os.path.join(temp_dir, f'Main_{unique_id}.java')
-            with open(path, 'w') as f: f.write(code)
-            files_to_cleanup.append(path)
-            cmd = ['java', path]
-            
-        else:
-            emit('terminal:output', {'data': 'Unsupported language'})
+        src_file = os.path.join(temp_dir, f'prog_{unique_id}.cpp')
+        exe_file = os.path.join(temp_dir, f'prog_{unique_id}.exe')
+        files_to_cleanup.extend([src_file, exe_file])
+        
+        with open(src_file, 'w') as f: f.write(code)
+        
+        # Compile with debug symbols (-g) for C++
+        compile_res = subprocess.run(['g++', '-g', src_file, '-o', exe_file], capture_output=True, text=True)
+        if compile_res.returncode != 0:
+            emit('terminal:output', {'data': compile_res.stderr})
+            emit('terminal:exit', {'code': 1})
             return
+        
+        if mode == 'visualize':
+            tracer_path = os.path.join(os.path.dirname(__file__), 'scripts', 'cpp_tracer.py')
+            import sys
+            cmd = [sys.executable, tracer_path, exe_file]
+        else:
+            cmd = [exe_file]
 
         # Spawn the process
         process = subprocess.Popen(
@@ -242,6 +213,6 @@ def handle_disconnect():
 
 if __name__ == '__main__':
     # Get port from environment variable (required for Render/Railway)
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5001))
     # In production, host must be 0.0.0.0 to be accessible externally
     socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)

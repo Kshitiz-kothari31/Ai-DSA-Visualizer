@@ -4,10 +4,10 @@ A high-performance, local Data Structures and Algorithms (DSA) visualizer with i
 
 ## ✨ Key Features
 
-- **Local Code Tracing**: Execute and trace JavaScript/Python/C++ code locally without external dependencies.
-- **ML Complexity Analysis**: Integrated Random Forest model to predict Time and Space complexity based on code structure.
-- **Interactive Visualizer**: Steppable execution with variable tracking and state snapshots.
-- **Multi-Language Support**: Support for JS, Python (transpiled), and C++.
+- **Native C++ Tracing**: Execute and trace C++ code locally using GDB-driven memory inspection.
+- **ML Complexity Analysis**: Integrated Random Forest model to predict Time and Space complexity based on C++ code structure.
+- **Interactive Visualizer**: Steppable execution with pointer tracking and automatic state snapshots.
+- **Pure C++ Experience**: Optimized specifically for C++ DSA students and professionals.
 - **Modern UI**: Sleek, dark-mode first design with glassmorphic elements.
 
 ## 🛠️ Tech Stack

@@ -73,60 +73,35 @@ const executeCodePlugin = () => ({
       const tmpDir = os.tmpdir();
       const uniqueId = Date.now();
       let cmd, args, filename;
+      let finalCode = code;
 
-      if (language === 'javascript') {
-        filename = path.join(tmpDir, `script_${uniqueId}.js`);
-        fs.writeFileSync(filename, code);
-        cmd = 'node';
-        args = [filename];
-      } else if (language === 'python') {
-        filename = path.join(tmpDir, `script_${uniqueId}.py`);
-        fs.writeFileSync(filename, code);
-        
-        if (mode === 'visualize') {
-            // Use our local tracer script
-            const tracerPath = path.resolve(process.cwd(), 'scripts', 'py_tracer.py');
-            cmd = 'python';
-            args = ['-u', tracerPath, filename];
-        } else {
-            cmd = 'python';
-            args = ['-u', filename];
-        }
-      } else if (language === 'cpp') {
+      if (language === 'cpp') {
         const srcFile = path.join(tmpDir, `prog_${uniqueId}.cpp`);
         const exeFile = path.join(tmpDir, `prog_${uniqueId}.exe`);
         
-        // Auto-inject C++ helper if in visualize mode
-        let finalCode = code;
-        if (mode === 'visualize') {
-            const helper = `
-#include <iostream>
-#include <string>
-#include <vector>
-#define VISUALIZE(name, val) std::cout << "__VISUALIZE__:{\\"variables\\":{\\"" << #name << "\\":" << val << "}}" << std::endl;
-`;
-            finalCode = helper + code;
-        }
-
-        fs.writeFileSync(srcFile, finalCode);
+        fs.writeFileSync(srcFile, code);
         
-        exec(`g++ "${srcFile}" -o "${exeFile}"`, (error, stdout, stderr) => {
+        // Compile with debug symbols for GDB tracing
+        exec(`g++ -g "${srcFile}" -o "${exeFile}"`, (error, stdout, stderr) => {
           if (error) {
             server.ws.send('terminal:output', { data: stderr || error.message });
             server.ws.send('terminal:exit', { code: 1 });
             return;
           }
-          currentProcess = spawn(exeFile);
+          
+          if (mode === 'visualize') {
+            const tracerPath = path.resolve(process.cwd(), 'scripts', 'cpp_tracer.py');
+            currentProcess = spawn('python', [tracerPath, exeFile]);
+          } else {
+            currentProcess = spawn(exeFile);
+          }
+          
           setupProcessListeners(currentProcess, server, [srcFile, exeFile]);
         });
         return;
-      } else if (language === 'java') {
-        filename = path.join(tmpDir, `Main_${uniqueId}.java`);
-        fs.writeFileSync(filename, code);
-        cmd = 'java';
-        args = [filename];
       } else {
-        server.ws.send('terminal:output', { data: 'Unsupported language' });
+        server.ws.send('terminal:output', { data: 'Only C++ is supported currently.\n' });
+        server.ws.send('terminal:exit', { code: 1 });
         return;
       }
 

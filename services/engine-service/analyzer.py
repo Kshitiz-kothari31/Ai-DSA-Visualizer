@@ -1,17 +1,21 @@
 import re
 import joblib
 import numpy as np
+import os
 
 class MLComplexityAnalyzer:
     def __init__(self):
         try:
-            self.model = joblib.load('complexity_model.pkl')
-            self.space_model = joblib.load('space_model.pkl')
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            self.model = joblib.load(os.path.join(base_dir, 'complexity_model.pkl'))
+            self.space_model = joblib.load(os.path.join(base_dir, 'space_model.pkl'))
             self.rank_map = {
                 "O(2^n)": 6, "O(n³)": 5, "O(n²)": 4, 
                 "O(n log n)": 3, "O(n)": 2, "O(log n)": 1, "O(1)": 0
             }
-        except:
+            print("✅ AI Models Loaded Successfully")
+        except Exception as e:
+            print(f"❌ AI Models Load Error: {e}")
             self.model = None
             self.space_model = None
 
@@ -25,57 +29,63 @@ class MLComplexityAnalyzer:
     def extract_features(self, code):
         clean = self.clean_code(code)
         
-        # 1. Count Total Loops
-        loops = len(re.findall(r'\b(for|while)\b', clean))
+        # 1. Count Total Loops (C++ focused: for, while, do-while)
+        loops = len(re.findall(r'\b(for|while|do)\b', clean))
         
         # 2. Max Nesting Depth
         max_depth = 0
         current_nesting = 0
-        
-        # Improved nesting detection using brace counting and loop keywords
         lines = clean.split('\n')
         for line in lines:
             if re.search(r'\b(for|while)\b', line):
                 current_nesting += 1
                 max_depth = max(max_depth, current_nesting)
-            
-            # Count closing braces in this line
             closings = line.count('}')
             if closings > 0:
                 current_nesting = max(0, current_nesting - closings)
 
-        # 3. Recursion Signature
-        # Basic check: does the function call itself?
-        # We look for a word followed by ( that is actually the name of the function
-        # This is a heuristic for a "hand-written ML" feature
+        # 3. Recursion Signature (C++ focused)
         recursion = 0
-        func_match = re.search(r'(?:def|function|int|void)\s+(\w+)\s*\(', clean)
-        if func_match:
-            func_name = func_match.group(1)
-            # Find the body of the function and look for the name
-            if re.search(rf'{func_name}\s*\(', clean[func_match.end():]):
-                recursion = 1
-                # Double recursion check (O(2^n) signature)
-                if len(re.findall(rf'{func_name}\s*\(', clean[func_match.end():])) >= 2:
-                    recursion = 2 # Multi-recursion
+        func_pattern = r'\b(?:int|void|auto|bool|long|float|double|char|string)\s+(\w+)\s*\([^)]*\)\s*\{'
+        for match in re.finditer(func_pattern, clean):
+            func_name = match.group(1)
+            if func_name == "main": continue
+            
+            # Simple brace matching to extract function body
+            body_start = match.end()
+            brace_count = 1
+            body_end = body_start
+            for i in range(body_start, len(clean)):
+                if clean[i] == '{': brace_count += 1
+                elif clean[i] == '}': brace_count -= 1
+                if brace_count == 0:
+                    body_end = i
+                    break
+            
+            body = clean[body_start:body_end]
+            calls = len(re.findall(rf'\b{func_name}\s*\(', body))
+            if calls >= 2: recursion = max(recursion, 2)
+            elif calls >= 1: recursion = max(recursion, 1)
 
-        # 4. Sorting logic
-        sorting = 1 if re.search(r'\.sort\(|std::sort|sorted\(|qsort\(', clean) else 0
+        # 4. Sorting logic (STL)
+        sorting = 1 if re.search(r'std::sort|std::stable_sort|qsort\(', clean) else 0
         
         # 5. Divide and Conquer / Halving
-        halving = 1 if re.search(r'/= 2|>>1|mid\s*=|\b(low|high|mid)\b', clean) else 0
-        if re.search(r'binary_search|bisect', clean): halving = 2
+        halving = 1 if re.search(r'/= 2|>>= 1|mid\s*=|\b(low|high|mid)\b', clean) else 0
+        if re.search(r'std::binary_search|std::lower_bound|std::upper_bound', clean): halving = 2
 
-        # 6. Data Structure Complexity
-        # Count allocations or usage of complex structures
-        structs_pattern = r'\b(?:vector|List|ArrayList|map|set|dict|unordered_)\b|=\s*\[\]|new\s+\w+(?:\[|\()|\.push\b|\.append\b|\.add\b'
-        structs = len(re.findall(structs_pattern, clean, re.I))
+        # 6. Data Structure Complexity (C++ STL & Dynamic Arrays)
+        structs_pattern = r'\b(?:vector|map|set|unordered_|stack|queue|priority_queue|list|deque)\b|new\s+\w+|\.push_back\(|\.emplace_back\(|\.insert\('
+        structs = len(re.findall(structs_pattern, clean))
         
-        # 7. Max Array Dimension
+        # 7. Max Array Dimension (C++ focused)
         max_array_dim = 0
-        if re.search(r'vector<vector|\[\]\s*\[\]|new\s+\w+\[\w*\]\s*\[\w*\]', clean):
+        if re.search(r'vector\s*<\s*vector|\[\w+\]\s*\[\w+\]', clean):
             max_array_dim = 2
-        elif re.search(r'\b(?:vector|ArrayList|stack|queue)\b|new\s+\w+(?:\[|\()|=\s*\[\]|\.push\b|\.append\b|\.add\b', clean, re.I):
+        # Detect O(n) for declarations or dynamic allocations
+        # Look for: type name[], new type[n], or vector<type>
+        # We check for a type-like word before the [ to avoid matching simple access like arr[i]
+        elif re.search(r'\b(?:vector|stack|queue|list|deque)\b|new\s+\w+\[|\w+\s+\w+\[[a-zA-Z_]\w*\]', clean):
             max_array_dim = 1
         
         return [loops, max_depth, recursion, sorting, halving, structs, max_array_dim]

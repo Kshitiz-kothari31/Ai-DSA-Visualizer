@@ -28,7 +28,7 @@ export default function RunnerSection({ output = [], isRunning, onInput, onShell
             <div className="px-4 py-1.5 bg-[#0a0a0a] flex items-center justify-between border-b border-[#1f1f1f]">
                 <div className="flex items-center space-x-2">
                     <Terminal className="w-4 h-4 text-[#3b82f6]" />
-                    <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Interactive Terminal</span>
+                    <span className="text-[11px] lg:text-[13px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Interactive Terminal</span>
                     {isRunning && (
                         <span className="text-sm text-[#3b82f6] font-bold animate-pulse ml-2">Running...</span>
                     )}
@@ -39,7 +39,7 @@ export default function RunnerSection({ output = [], isRunning, onInput, onShell
             </div>
             <div 
                 ref={scrollRef}
-                className="flex-grow p-4 overflow-y-auto font-mono text-sm bg-black text-[#a1a1aa] selection:bg-[#3b82f6]/30"
+                className="flex-grow p-4 lg:p-6 font-mono text-sm lg:text-base bg-black text-[#a1a1aa] selection:bg-[#3b82f6]/30"
             >
                 {output.length === 0 && !isRunning ? (
                     <div className="text-gray-600 italic mb-2">Terminal ready. Type a command or run your code.</div>

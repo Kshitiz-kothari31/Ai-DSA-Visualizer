@@ -85,14 +85,14 @@ export default function Home() {
               <span className="px-4 py-1.5 text-xs font-bold tracking-wider text-indigo-300 uppercase">Koda OS v2.0 Now Live</span>
             </motion.div>
             
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 text-transparent bg-clip-text bg-gradient-to-br from-white via-gray-200 to-gray-500 leading-tight">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-extrabold tracking-tight mb-8 text-transparent bg-clip-text bg-gradient-to-br from-white via-gray-200 to-gray-500 leading-tight">
               Master Code Dynamics. <br/>
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-500">
                 Predict the Future.
               </span>
             </h1>
             
-            <p className="mt-4 text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
+            <p className="mt-4 text-lg md:text-xl lg:text-2xl text-gray-400 max-w-3xl mx-auto mb-12 leading-relaxed font-light">
               The ultimate professional suite for real-time algorithm tracing and Machine Learning driven Big-O complexity analysis.
             </p>
             
@@ -154,8 +154,8 @@ export default function Home() {
           />
           <FeatureCard 
             icon={ShieldCheck}
-            title="Secure Execution"
-            description="Write logic in JavaScript, Python, or C++. Your code is executed in isolated, secure sandboxes to prevent malicious operations."
+            title="Native C++ Engine"
+            description="High-performance code execution using GDB-driven memory tracing. Your code is compiled and analyzed locally for real-time visualization."
             delay={0.5}
           />
         </div>

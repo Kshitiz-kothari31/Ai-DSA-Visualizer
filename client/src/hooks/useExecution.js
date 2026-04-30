@@ -1,6 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { instrumentCode, executeInstrumented } from '../utils/interceptor';
-import { transpileToVisualJS } from '../utils/LanguageTranspiler';
 import { io } from 'socket.io-client';
 
 export function useExecution() {
@@ -29,7 +27,7 @@ export function useExecution() {
 
             socketRef.current.on('terminal:visualize-frame', (frame) => {
                 setStateList(prev => [...prev, {
-                    variables: takeSnapshot(frame.variables),
+                    variables: frame.variables, // Robust tracers already provided snapshots
                     line: frame.line
                 }]);
             });
@@ -116,79 +114,23 @@ export function useExecution() {
         return snapshot;
     };
 
-    const executeCode = useCallback(async (code, language = 'javascript', mode = 'visualize') => {
+    const executeCode = useCallback(async (code, language = 'cpp', mode = 'visualize') => {
         setIsRunning(true);
         setOutput([]);
         setStateList([]);
 
-        if (mode === 'visualize' && language === 'javascript') {
-            try {
-                setOutput([`Initializing Universal Data Engine...`]);
-
-                // 1. BRIDGE: Transpile
-                const jsCompatibleCode = transpileToVisualJS(code, language);
-
-                // 2. INSTRUMENT: Inject tracking hooks
-                const { instrumented, varsToTrack } = instrumentCode(jsCompatibleCode);
-
-                // 3. EXECUTE
-                const frames = await executeInstrumented(
-                    { instrumented, varsToTrack }, 
-                    {}, 
-                    requestInputFromUI
-                );
-
-                // 4. TRANSFORM: Universal Mapping
-                const transformedStates = frames.map((frame) => {
-                    const state = frame.state || {};
-                    const logs = state.__logs || [];
-                    
-                    // Track everything via object graph mapping
-                    const variablesSnapshot = takeSnapshot(state.variables || state);
-
-                    if (logs.length > 0) setOutput(logs);
-
-                    return {
-                        variables: variablesSnapshot,
-                        line: frame.line
-                    };
-                });
-
-                setStateList(transformedStates);
-                setOutput(prev => [...prev, `Visualization ready: ${transformedStates.length} states captured.`]);
-
-            } catch (err) {
-                setOutput(prev => [...prev, `Execution Error: ${err.message}`]);
-                console.error('Execution Failed:', err);
-            } finally {
-                setIsRunning(false);
-            }
-        } else if (mode === 'visualize') {
-            // New path for other languages: Native Tracing on the server
-            if (socketRef.current) {
-                setOutput([`Running Native Tracing for ${language}...`]);
-                socketRef.current.emit('terminal:run', { code, language, mode: 'visualize' });
-            } else if (import.meta.hot) {
-                setOutput([`Running Native Tracing for ${language}...`]);
-                import.meta.hot.send('terminal:run', { code, language, mode: 'visualize' });
-            } else {
-                setOutput(['Native Tracing requires a connected backend or Vite Dev Server.']);
-                setIsRunning(false);
-            }
+        // Native Tracing for C++
+        if (socketRef.current) {
+            setOutput([`Initializing C++ Native Tracer...`]);
+            socketRef.current.emit('terminal:run', { code, language: 'cpp', mode });
+        } else if (import.meta.hot) {
+            setOutput([`Initializing C++ Native Tracer...`]);
+            import.meta.hot.send('terminal:run', { code, language: 'cpp', mode });
         } else {
-            // MODE: 'run'
-            if (socketRef.current) {
-                setOutput([`Running remote terminal for ${language}...`]);
-                socketRef.current.emit('terminal:run', { code, language, mode: 'run' });
-            } else if (import.meta.hot) {
-                setOutput([`Running terminal for ${language}...`]);
-                import.meta.hot.send('terminal:run', { code, language, mode: 'run' });
-            } else {
-                setOutput(['Terminal requires a connected backend or Vite Dev Server.']);
-                setIsRunning(false);
-            }
+            setOutput(['Terminal requires a connected backend or Vite Dev Server.']);
+            setIsRunning(false);
         }
-    }, [requestInputFromUI]);
+    }, []);
 
     // Terminal listeners
     useEffect(() => {
@@ -204,7 +146,7 @@ export function useExecution() {
             const handleVisualizeFrame = (frame) => {
                 // Real-time frame capture from native processes
                 setStateList(prev => [...prev, {
-                    variables: takeSnapshot(frame.variables),
+                    variables: frame.variables, // Robust tracers already provided snapshots
                     line: frame.line
                 }]);
             };

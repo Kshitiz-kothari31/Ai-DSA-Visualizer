@@ -12,16 +12,38 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal } from 'lucide-react';
 
 const DEFAULT_CODE = {
-  javascript: `function bubbleSort(arr) {\n  let n = arr.length;\n  for (let i = 0; i < n - 1; i++) {\n    for (let j = 0; j < n - i - 1; j++) {\n      if (arr[j] > arr[j + 1]) {\n        [arr[j], arr[j+1]] = [arr[j+1], arr[j]];\n      }\n    }\n  }\n}\nlet myArray = [50, 20, 80, 10];\nbubbleSort(myArray);`,
-  python: `def bubble_sort(arr):\n    n = len(arr)\n    for i in range(n):\n        for j in range(0, n-i-1):\n            if arr[j] > arr[j+1]:\n                arr[j], arr[j+1] = arr[j+1], arr[j]\n\nmy_array = [50, 20, 80, 10]\nbubble_sort(my_array)`,
-  cpp: `#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    vector<int> arr = {50, 20, 80, 10};\n    sort(arr.begin(), arr.end());\n    for(int x : arr) cout << x << " ";\n    return 0;\n}`
+  cpp: `/* 
+ *  ========================================================
+ *  ██╗  ██╗ ██████╗ ██████╗  █████╗ 
+ *  ██║ ██╔╝██╔═══██╗██╔══██╗██╔══██╗
+ *  █████╔╝ ██║   ██║██║  ██║███████║
+ *  ██╔═██╗ ██║   ██║██║  ██║██╔══██║
+ *  ██║  ██╗╚██████╔╝██████╔╝██║  ██║
+ *  ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝
+ *  ========================================================
+ *  Welcome to KODA - Advanced Algorithmic Visualizer
+ *  Write your C++ code below and click "Visualize" to 
+ *  see it execute step-by-step.
+ */
+
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+int main() {
+    // Your algorithmic journey starts here...
+    
+    return 0;
+}`
 };
 
 export default function EditorPage() {
   // --- State ---
-  const [language, setLanguage] = useState('javascript');
-  const [code, setCode] = useState(DEFAULT_CODE.javascript);
-  
+  const [language] = useState('cpp');
+  const [code, setCode] = useState(DEFAULT_CODE.cpp);
+
   const { isRunning, output, stateList, executeCode, sendInput, clearOutput, executeShellCommand } = useExecution();
   const { isAnalyzing, analysisData, analyzeCode } = useAiAnalysis();
 
@@ -36,7 +58,8 @@ export default function EditorPage() {
 
   // Layout states
   const [sidePanelWidth, setSidePanelWidth] = useState(50); // Percentage
-  const [bottomPanelHeight, setBottomPanelHeight] = useState(40); // Percentage
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(40); // Left bottom (Terminal)
+  const [rightBottomHeight, setRightBottomHeight] = useState(50); // Right bottom (AI Analysis)
   const [isResizing, setIsResizing] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
@@ -66,30 +89,29 @@ export default function EditorPage() {
     }
   }, [stateList]);
 
+  // Fix Monaco Editor scrolling/resize issues
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 350); // Match transition duration
+    return () => clearTimeout(timer);
+  }, [sidePanelWidth, bottomPanelHeight, isRunnerVisible, isVisualizerVisible, isAiAnalysisVisible]);
+
   // --- Handlers ---
-  const handleLanguageChange = (newLang) => {
-    setLanguage(newLang);
-    setCode(DEFAULT_CODE[newLang] || "");
-  };
+  // Language change removed (C++ only)
 
   const handleVisualize = useCallback(() => {
-    setIsAiAnalysisVisible(false);
-    setIsRunnerVisible(false);
     setIsVisualizerVisible(true);
     executeCode(code, language, 'visualize');
   }, [code, language, executeCode]);
 
   const handleRun = useCallback(() => {
-    setIsVisualizerVisible(false);
-    setIsAiAnalysisVisible(false);
     setIsRunnerVisible(true);
     if (clearOutput) clearOutput(); // Ensure fresh console
     executeCode(code, language, 'run');
   }, [code, language, executeCode, clearOutput]);
 
   const handleAiAnalysis = useCallback(() => {
-    setIsVisualizerVisible(false);
-    setIsRunnerVisible(false);
     setIsAiAnalysisVisible(true);
     analyzeCode(code, language);
   }, [code, language, analyzeCode]);
@@ -103,8 +125,15 @@ export default function EditorPage() {
 
     const onMouseMove = (moveEvent) => {
       const deltaY = startY - moveEvent.clientY;
-      const newHeight = Math.min(Math.max(startHeight + (deltaY / containerHeight) * 100, 10), 80);
-      setBottomPanelHeight(newHeight);
+      const pct = (deltaY / containerHeight) * 100;
+      const newHeight = startHeight + pct;
+
+      if (newHeight < 5) {
+        setIsRunnerVisible(false);
+        setBottomPanelHeight(40); // Reset for next time
+      } else {
+        setBottomPanelHeight(Math.min(Math.max(newHeight, 10), 80));
+      }
     };
 
     const onMouseUp = () => {
@@ -117,6 +146,35 @@ export default function EditorPage() {
     document.addEventListener('mouseup', onMouseUp);
   }, [bottomPanelHeight]);
 
+  const handleRightVerticalResize = useCallback((e) => {
+    setIsResizing(true);
+    const startY = e.clientY;
+    const startHeight = rightBottomHeight;
+    const containerHeight = containerRef.current.offsetHeight;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaY = startY - moveEvent.clientY;
+      const pct = (deltaY / containerHeight) * 100;
+      const newHeight = startHeight + pct;
+
+      if (newHeight < 5) {
+        setIsAiAnalysisVisible(false);
+        setRightBottomHeight(50); // Reset for next time
+      } else {
+        setRightBottomHeight(Math.min(Math.max(newHeight, 10), 80));
+      }
+    };
+
+    const onMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [rightBottomHeight]);
+
   const handleHorizontalResize = useCallback((e) => {
     setIsResizing(true);
     const startX = e.clientX;
@@ -125,8 +183,16 @@ export default function EditorPage() {
 
     const onMouseMove = (moveEvent) => {
       const deltaX = startX - moveEvent.clientX;
-      const newWidth = Math.min(Math.max(startWidth + (deltaX / containerWidth) * 100, 20), 80);
-      setSidePanelWidth(newWidth);
+      const pct = (deltaX / containerWidth) * 100;
+      const newWidth = startWidth + pct;
+
+      if (newWidth < 5) {
+        setIsVisualizerVisible(false);
+        setIsAiAnalysisVisible(false);
+        setSidePanelWidth(50); // Reset for next time
+      } else {
+        setSidePanelWidth(Math.min(Math.max(newWidth, 20), 80));
+      }
     };
 
     const onMouseUp = () => {
@@ -144,20 +210,20 @@ export default function EditorPage() {
 
   return (
     <div className="h-screen w-screen flex flex-col font-sans bg-[#050505] text-white overflow-hidden">
-      <Navbar 
-        onVisualize={handleVisualize} 
+      <Navbar
+        onVisualize={handleVisualize}
         onAiAnalysis={handleAiAnalysis}
-        onFileUpload={(fileCode) => setCode(fileCode)} 
+        onFileUpload={(fileCode) => setCode(fileCode)}
       />
 
-      <div 
+      <div
         ref={containerRef}
         className={`flex-grow flex flex-col lg:flex-row w-full overflow-hidden ${isResizing ? 'select-none' : ''}`}
       >
         {/* Left Column: Editor & Terminal */}
         <motion.div
           className={`relative flex flex-col border-b lg:border-b-0 lg:border-r border-[#1f1f1f] ${isResizing ? '' : 'transition-all duration-300 ease-in-out'}`}
-          style={{ 
+          style={{
             width: isDesktop && isRightPanelOpen ? `${100 - sidePanelWidth}%` : '100%',
             height: !isDesktop && isRightPanelOpen ? '50%' : '100%'
           }}
@@ -166,7 +232,7 @@ export default function EditorPage() {
             <EditorSection
               code={code}
               language={language}
-              onLanguageChange={handleLanguageChange}
+              onLanguageChange={() => { }} // Disabled
               onChange={setCode}
               onRun={handleRun}
             />
@@ -183,12 +249,12 @@ export default function EditorPage() {
                   transition={isResizing ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 120 }}
                   className="w-full border-t border-[#333] z-50 bg-[#0a0a0a] overflow-hidden flex-shrink-0"
                 >
-                  <RunnerSection 
-                    output={output} 
-                    isRunning={isRunning} 
-                    onInput={sendInput} 
+                  <RunnerSection
+                    output={output}
+                    isRunning={isRunning}
+                    onInput={sendInput}
                     onShellCommand={executeShellCommand}
-                    onClose={() => setIsRunnerVisible(false)} 
+                    onClose={() => setIsRunnerVisible(false)}
                   />
                 </motion.div>
               </>
@@ -208,28 +274,44 @@ export default function EditorPage() {
               animate={{ x: 0, y: 0, opacity: 1 }}
               exit={{ x: isDesktop ? "100%" : 0, y: isDesktop ? 0 : "100%", opacity: 0 }}
               transition={{ duration: 0.3 }}
-              style={{ 
+              style={{
                 width: isDesktop ? `${sidePanelWidth}%` : '100%',
-                height: !isDesktop ? '50%' : '100%'
+                height: !isDesktop ? '100%' : '100%'
               }}
-              className="relative bg-[#080808] border-t lg:border-t-0 lg:border-l border-[#1f1f1f] overflow-hidden flex-shrink-0"
+              className="relative bg-[#080808] border-t lg:border-t-0 lg:border-l border-[#1f1f1f] overflow-hidden flex flex-col flex-shrink-0"
             >
-              <div className="h-full w-full">
-                {isVisualizerVisible ? (
-                  <VisualizerSection
-                    stateList={stateList}
-                    currentStateIndex={currentStateIndex}
-                    setCurrentStateIndex={setCurrentStateIndex}
-                    isPlaying={isPlaying}
-                    setIsPlaying={setIsPlaying}
-                    onClose={() => setIsVisualizerVisible(false)}
-                  />
-                ) : (
-                  <AiAnalysisSection
-                    analysisData={analysisData}
-                    isAnalyzing={isAnalyzing}
-                    onClose={() => setIsAiAnalysisVisible(false)}
-                  />
+              <div className="flex-grow flex flex-col min-h-0">
+                {isVisualizerVisible && (
+                  <div
+                    className="flex-grow min-h-0 flex flex-col relative"
+                    style={{ height: isAiAnalysisVisible ? `${100 - rightBottomHeight}%` : '100%' }}
+                  >
+                    <VisualizerSection
+                      stateList={stateList}
+                      currentStateIndex={currentStateIndex}
+                      setCurrentStateIndex={setCurrentStateIndex}
+                      isPlaying={isPlaying}
+                      setIsPlaying={setIsPlaying}
+                      onClose={() => setIsVisualizerVisible(false)}
+                    />
+                  </div>
+                )}
+
+                {isVisualizerVisible && isAiAnalysisVisible && (
+                  <Resizer direction="vertical" onMouseDown={handleRightVerticalResize} />
+                )}
+
+                {isAiAnalysisVisible && (
+                  <div
+                    className="min-h-0 flex flex-col relative"
+                    style={{ height: isVisualizerVisible ? `${rightBottomHeight}%` : '100%' }}
+                  >
+                    <AiAnalysisSection
+                      analysisData={analysisData}
+                      isAnalyzing={isAnalyzing}
+                      onClose={() => setIsAiAnalysisVisible(false)}
+                    />
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -239,13 +321,13 @@ export default function EditorPage() {
 
       {/* Global Bottom Bar */}
       <div className="h-14 bg-[#0a0a0a] border-t border-[#1f1f1f] flex items-center px-8 shrink-0 z-[60]">
-          <button 
-              onClick={() => setIsRunnerVisible(!isRunnerVisible)}
-              className={`flex items-center space-x-4 text-base font-black transition-colors ${isRunnerVisible ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
-          >
-              <Terminal className="w-5 h-5" />
-              <span className="uppercase tracking-[0.2em]">Terminal</span>
-          </button>
+        <button
+          onClick={() => setIsRunnerVisible(!isRunnerVisible)}
+          className={`flex items-center space-x-4 text-base font-black transition-colors ${isRunnerVisible ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+        >
+          <Terminal className="w-5 h-5" />
+          <span className="uppercase tracking-[0.2em]">Terminal</span>
+        </button>
       </div>
     </div>
   );
