@@ -140,6 +140,9 @@ def handle_run(data):
     language = data.get('language')
     mode = data.get('mode', 'run')
     
+    print(f"[HEARTBEAT] Received run request. SID: {sid}, Mode: {mode}, Lang: {language}")
+    socketio.emit('terminal:output', {'data': f"System: Initializing {mode} mode...\n"}, room=sid)
+    
     # Kill any existing process for this session
     if sid in active_processes:
         try:

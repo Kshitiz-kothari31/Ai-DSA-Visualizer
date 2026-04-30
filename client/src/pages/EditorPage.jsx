@@ -102,6 +102,7 @@ export default function EditorPage() {
 
   const handleVisualize = useCallback(() => {
     setIsVisualizerVisible(true);
+    setIsRunnerVisible(true); // Open terminal to show progress/logs
     executeCode(code, language, 'visualize');
   }, [code, language, executeCode]);
 
@@ -229,6 +230,7 @@ export default function EditorPage() {
           }}
         >
           <div className="flex-grow w-full relative min-h-0">
+
             <EditorSection
               code={code}
               language={language}
