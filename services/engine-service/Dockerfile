@@ -1,13 +1,10 @@
-# Use Python 3.11 slim as base
-FROM python:3.11-slim
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim-buster
 
-# Install system dependencies (C++, Java, Node.js)
+# Install System Dependencies (Required for C++ Compilation and Tracing)
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    default-jdk-headless \
-    curl \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
+    g++ \
+    gdb \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -20,8 +17,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the engine code
 COPY . .
 
-# Expose the port Flask operates on
-EXPOSE 5000
+# Expose the port the Engine Service operates on
+EXPOSE 5001
 
-# Run with eventlet for WebSocket support
+# Command to run the application
 CMD ["python", "app.py"]
