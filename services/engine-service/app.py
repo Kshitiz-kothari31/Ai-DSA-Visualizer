@@ -42,6 +42,14 @@ def get_chart_data(tc, is_stress=False):
         points.append({"n": n, "time": round(val, 2)})
     return points
 
+@app.route('/')
+def home():
+    return "Koda Engine Service is Live!", 200
+
+@app.route('/health')
+def health():
+    return {'status': 'ok'}
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.json

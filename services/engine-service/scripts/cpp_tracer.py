@@ -202,8 +202,8 @@ class GDBTracer:
                 # DE-DUPLICATION: Only emit if the state or line has changed
                 current_frame_json = json.dumps({"v": variables, "l": line}, sort_keys=True)
                 if current_frame_json == last_frame_json:
-                    # Skip redundant frame and step again
-                    step_out = self.send_command('step')
+                    # Skip redundant frame and move to next
+                    step_out = self.send_command('next')
                     if any("exited" in l for l in step_out): break
                     continue
                 
@@ -219,8 +219,8 @@ class GDBTracer:
                 print(f"__VISUALIZE__:{json.dumps(frame_data)}")
                 sys.stdout.flush()
 
-            # Step to next line
-            step_out = self.send_command('step')
+            # Move to next line
+            step_out = self.send_command('next')
             if any("exited" in l for l in step_out): break
 
         self.process.terminate()
