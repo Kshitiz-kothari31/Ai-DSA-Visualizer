@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, Pause, SkipBack, SkipForward, X, Database, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import XarrowRaw, { Xwrapper } from 'react-xarrows';
 const Xarrow = XarrowRaw.default || XarrowRaw;
 
@@ -59,38 +60,57 @@ const ArrayViewer = ({ data, rootVariables }) => {
     };
 
     return (
-        <div className="flex items-end gap-2 py-10 px-4" id={arrayId}>
-            {actualData.map((item, idx) => {
-                const pointers = pointersForIndex(idx);
-                return (
-                    <div key={idx} className="flex flex-col items-center gap-1.5 relative group" id={`obj-${item?.__id || ''}`}>
-                        {/* Dynamic Pointer Arrows */}
-                        {pointers.length > 0 && (
-                            <div className="absolute bottom-full mb-2 flex flex-col-reverse items-center">
-                                {/* Arrow Head */}
-                                <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-zinc-400 mt-1" />
-                                {/* Pointer Labels */}
-                                <div className="flex flex-col gap-1 items-center">
-                                    {pointers.map(p => {
-                                        const color = POINTER_COLORS[p.toLowerCase()] || 'bg-sky-500';
-                                        return (
-                                            <span key={p} className={`${color} text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg transform transition-transform hover:scale-110 uppercase tracking-tighter`}>
-                                                {p}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                        
-                        <div className="w-10 h-10 flex items-center justify-center border-2 border-zinc-600 bg-zinc-800 text-zinc-100 font-mono text-xs rounded hover:border-sky-500 transition-colors shadow-lg relative">
-                            {isPrimitive(item) ? String(item) : (item.__ref ? 'Ref' : 'Obj')}
-                            {item?.__ref && <Xarrow start={`obj-${item.__ref}-ptr-${idx}`} end={`obj-${item.__ref}`} showHead={true} color="#a1a1aa" />}
-                        </div>
-                        <span className="text-[9px] text-zinc-500 font-mono bg-zinc-900 px-1 rounded">{idx}</span>
-                    </div>
-                );
-            })}
+        <div className="flex items-end gap-2 py-10 px-4 min-h-[120px]" id={arrayId}>
+            <AnimatePresence mode="popLayout">
+                {actualData.map((item, idx) => {
+                    const pointers = pointersForIndex(idx);
+                    return (
+                        <motion.div 
+                            key={idx} 
+                            layout
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            className="flex flex-col items-center gap-1.5 relative group" 
+                            id={`obj-${item?.__id || ''}`}
+                        >
+                            {/* Dynamic Pointer Arrows */}
+                            {pointers.length > 0 && (
+                                <motion.div 
+                                    layoutId={`pointers-${pointers.join('-')}`}
+                                    className="absolute bottom-full mb-2 flex flex-col-reverse items-center"
+                                >
+                                    <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-zinc-400 mt-1" />
+                                    <div className="flex flex-col gap-1 items-center">
+                                        {pointers.map(p => {
+                                            const color = POINTER_COLORS[p.toLowerCase()] || 'bg-sky-500';
+                                            return (
+                                                <motion.span 
+                                                    key={p} 
+                                                    layout
+                                                    className={`${color} text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg uppercase tracking-tighter`}
+                                                >
+                                                    {p}
+                                                </motion.span>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
+                            )}
+                            
+                            <motion.div 
+                                layout
+                                className="w-10 h-10 flex items-center justify-center border-2 border-zinc-600 bg-zinc-800 text-zinc-100 font-mono text-xs rounded hover:border-sky-500 transition-colors shadow-lg relative"
+                            >
+                                {isPrimitive(item) ? String(item) : (item.__ref ? 'Ref' : 'Obj')}
+                                {item?.__ref && <Xarrow start={`obj-${item.__ref}-ptr-${idx}`} end={`obj-${item.__ref}`} showHead={true} color="#a1a1aa" />}
+                            </motion.div>
+                            <span className="text-[9px] text-zinc-500 font-mono bg-zinc-900 px-1 rounded">{idx}</span>
+                        </motion.div>
+                    );
+                })}
+            </AnimatePresence>
             {actualData.length === 0 && <span className="text-zinc-600 font-mono text-sm italic">Empty Array</span>}
         </div>
     );

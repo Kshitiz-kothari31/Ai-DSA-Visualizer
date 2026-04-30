@@ -33,27 +33,15 @@ export function useExecution() {
 
         socketRef.current.on('terminal:output', ({ data }) => {
             setOutput(prev => {
-                if (prev.length === 0) return [data];
+                const incoming = data.split('\n');
+                const next = [...prev];
+                if (next.length === 0) next.push("");
                 
-                // If the data contains newlines, split it and append
-                if (data.includes('\n')) {
-                    const parts = data.split('\n');
-                    const next = [...prev];
-                    // Append the first part to the last line
-                    next[next.length - 1] += parts[0];
-                    // Add subsequent parts as new lines
-                    for (let i = 1; i < parts.length; i++) {
-                        if (parts[i] !== '' || i < parts.length - 1) {
-                            next.push(parts[i]);
-                        }
-                    }
-                    return next;
-                } else {
-                    // Just append to the last line
-                    const next = [...prev];
-                    next[next.length - 1] += data;
-                    return next;
+                next[next.length - 1] += incoming[0];
+                for (let i = 1; i < incoming.length; i++) {
+                    next.push(incoming[i]);
                 }
+                return next;
             });
         });
 
@@ -63,10 +51,12 @@ export function useExecution() {
         });
 
         socketRef.current.on('terminal:visualize-frame', (frame) => {
-            setStateList(prev => [...prev, {
-                variables: frame.variables,
-                line: frame.line
-            }]);
+            if (frame.variables) {
+                setStateList(prev => [...prev, {
+                    variables: frame.variables,
+                    line: frame.line
+                }]);
+            }
         });
 
         return () => {
