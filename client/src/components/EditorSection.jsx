@@ -5,7 +5,9 @@ import { Play } from 'lucide-react';
 const EditorSection = React.memo(({ code, language, onLanguageChange, onChange, onRun }) => {
     return (
         <div className="h-full w-full flex flex-col bg-black overflow-hidden relative">
-            <div className="sticky top-0 z-20 px-3 sm:px-4 py-1.5 sm:py-2 border-b border-[#1f1f1f] bg-[#0a0a0a]/90 backdrop-blur-md flex items-center justify-between">
+            <div className={`z-20 px-3 sm:px-4 py-1.5 sm:py-2 border-b border-[#1f1f1f] bg-[#0a0a0a]/90 backdrop-blur-md flex items-center justify-between ${
+                window.innerWidth < 768 ? 'fixed top-12 left-0 right-0 h-10' : 'sticky top-0'
+            }`}>
                 <div className="flex items-center space-x-2 sm:space-x-4">
                     <span className="text-[11px] lg:text-[13px] font-bold text-zinc-400 uppercase tracking-[0.2em] hidden sm:inline">C++ Code Editor</span>
                     <span className="text-[10px] sm:text-xs bg-zinc-900 border border-[#333] rounded px-2 py-0.5 sm:px-3 sm:py-1 text-[#3b82f6] font-bold">C++</span>
@@ -18,6 +20,8 @@ const EditorSection = React.memo(({ code, language, onLanguageChange, onChange, 
                   <span>Run</span>
                 </button>
             </div>
+            {/* Spacer for fixed header on mobile */}
+            <div className="md:hidden h-10 w-full" />
             <div className="flex-grow relative overflow-hidden">
                 <Editor
                     height="100%"
