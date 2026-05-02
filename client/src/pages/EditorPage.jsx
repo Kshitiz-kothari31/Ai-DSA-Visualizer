@@ -221,16 +221,18 @@ export default function EditorPage() {
   const isRightPanelOpen = isVisualizerVisible || isAiAnalysisVisible;
 
   return (
-    <div className="h-screen w-screen flex flex-col font-sans bg-[#050505] text-white overflow-hidden">
-      <Navbar
-        onVisualize={handleVisualize}
-        onAiAnalysis={handleAiAnalysis}
-        onFileUpload={(fileCode) => setCode(fileCode)}
-      />
+    <div className="h-screen h-[100dvh] w-screen flex flex-col font-sans bg-[#050505] text-white overflow-hidden relative">
+      <div className="fixed top-0 left-0 right-0 z-[100]">
+        <Navbar
+          onVisualize={handleVisualize}
+          onAiAnalysis={handleAiAnalysis}
+          onFileUpload={(fileCode) => setCode(fileCode)}
+        />
+      </div>
 
       <div
         ref={containerRef}
-        className={`flex-grow flex flex-col lg:flex-row w-full overflow-hidden ${isResizing ? 'select-none' : ''}`}
+        className={`flex-grow flex flex-col lg:flex-row w-full overflow-hidden mt-12 sm:mt-16 mb-12 sm:mb-14 ${isResizing ? 'select-none' : ''}`}
       >
         {/* Left Column: Editor & Terminal */}
         <motion.div
@@ -337,7 +339,7 @@ export default function EditorPage() {
       </div>
 
       {/* Global Bottom Bar */}
-      <div className="h-12 sm:h-14 bg-[#0a0a0a] border-t border-[#1f1f1f] flex items-center px-4 sm:px-8 shrink-0 z-[60]">
+      <div className="fixed bottom-0 left-0 right-0 z-[100] h-12 sm:h-14 bg-[#0a0a0a] border-t border-[#1f1f1f] flex items-center px-4 sm:px-8 shrink-0">
         <button
           onClick={() => {
             const nextState = !isRunnerVisible;
