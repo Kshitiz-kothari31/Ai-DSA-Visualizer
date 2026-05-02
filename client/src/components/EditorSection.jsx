@@ -27,19 +27,20 @@ const EditorSection = React.memo(({ code, language, onLanguageChange, onChange, 
                     theme="vs-dark"
                     options={{
                         minimap: { enabled: false },
-                        fontSize: 17,
-                        padding: { top: 20, bottom: 200 },
+                        fontSize: window.innerWidth < 768 ? 13 : 17,
+                        lineHeight: window.innerWidth < 768 ? 18 : 24,
+                        padding: { top: 10, bottom: 200 },
                         automaticLayout: true,
                         scrollBeyondLastLine: true,
                         backgroundColor: '#000000',
-                        lineNumbersMinChars: 3,
+                        lineNumbersMinChars: 2,
                         fixedOverflowWidgets: true,
                         wordWrap: 'on',
                         scrollbar: {
                             vertical: 'visible',
                             horizontal: 'visible',
-                            verticalScrollbarSize: 12,
-                            horizontalScrollbarSize: 12
+                            verticalScrollbarSize: 10,
+                            horizontalScrollbarSize: 10
                         },
                         renderLineHighlight: 'all',
                         overviewRulerBorder: false,

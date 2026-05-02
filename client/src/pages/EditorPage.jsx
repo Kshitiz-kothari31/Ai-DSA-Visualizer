@@ -337,7 +337,7 @@ export default function EditorPage() {
       </div>
 
       {/* Global Bottom Bar */}
-      <div className="h-14 bg-[#0a0a0a] border-t border-[#1f1f1f] flex items-center px-8 shrink-0 z-[60]">
+      <div className="h-12 sm:h-14 bg-[#0a0a0a] border-t border-[#1f1f1f] flex items-center px-4 sm:px-8 shrink-0 z-[60]">
         <button
           onClick={() => {
             const nextState = !isRunnerVisible;
@@ -347,9 +347,9 @@ export default function EditorPage() {
             }
             setIsRunnerVisible(nextState);
           }}
-          className={`flex items-center space-x-4 text-base font-black transition-colors ${isRunnerVisible ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          className={`flex items-center space-x-3 sm:space-x-4 text-xs sm:text-base font-black transition-colors ${isRunnerVisible ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
         >
-          <Terminal className="w-5 h-5" />
+          <Terminal className="w-4 h-4 sm:w-5 h-5" />
           <span className="uppercase tracking-[0.2em]">Terminal</span>
         </button>
       </div>

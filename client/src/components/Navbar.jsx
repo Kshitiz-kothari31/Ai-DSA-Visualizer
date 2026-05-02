@@ -26,7 +26,7 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
     };
 
     return (
-        <nav className="w-full bg-black shadow-lg px-2 sm:px-8 py-2 sm:py-4 flex items-center justify-between border-b border-[#1f1f1f]">
+        <nav className="w-full bg-black shadow-lg px-2 sm:px-8 h-12 sm:h-16 flex items-center justify-between border-b border-[#1f1f1f]">
             <div className="flex items-center space-x-2 sm:space-x-8">
                 <div className="flex items-center space-x-1.5 sm:space-x-4">
                     <Code2 className="w-5 h-5 sm:w-8 sm:h-8 text-[#3b82f6]" />
