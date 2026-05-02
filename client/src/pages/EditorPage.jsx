@@ -241,8 +241,13 @@ export default function EditorPage() {
             display: !isDesktop && isRightPanelOpen ? 'none' : 'flex'
           }}
         >
-          <div className={`flex-grow w-full relative min-h-0 ${!isDesktop && isRunnerVisible ? 'hidden' : 'block'}`}>
-            <div className={`w-full overflow-hidden ${!isDesktop ? 'h-[90%]' : 'h-full'}`}>
+          <div className="flex-grow w-full relative min-h-0 flex flex-col">
+            <div 
+              className={`w-full overflow-hidden transition-all duration-300 ${
+                !isDesktop && isRightPanelOpen ? 'h-0 hidden' : 
+                !isDesktop && isRunnerVisible ? 'h-[30%]' : 'h-full'
+              }`}
+            >
               <EditorSection
                 code={code}
                 language={language}
@@ -251,15 +256,12 @@ export default function EditorPage() {
                 onRun={handleRun}
               />
             </div>
-          </div>
 
-          <AnimatePresence>
-            {isRunnerVisible && (
-              <>
-                {isDesktop && <Resizer direction="vertical" onMouseDown={handleVerticalResize} />}
+            <AnimatePresence>
+              {isRunnerVisible && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: !isDesktop ? '100%' : `${bottomPanelHeight}%`, opacity: 1 }}
+                  animate={{ height: !isDesktop ? '70%' : `${bottomPanelHeight}%`, opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={isResizing ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 120 }}
                   className="w-full border-t border-[#333] z-50 bg-[#0a0a0a] overflow-hidden flex-shrink-0"
@@ -272,9 +274,9 @@ export default function EditorPage() {
                     onClose={() => setIsRunnerVisible(false)}
                   />
                 </motion.div>
-              </>
-            )}
-          </AnimatePresence>
+              )}
+            </AnimatePresence>
+          </div>
         </motion.div>
 
         {isDesktop && isRightPanelOpen && (
