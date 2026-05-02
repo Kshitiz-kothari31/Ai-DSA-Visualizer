@@ -57,8 +57,13 @@ def analyze():
     language = data.get('language', 'cpp')
     print(f"Analyzing {language} code...")
     
-    tc, tc_reason = engine.predict(code)
-    sc, sc_reason = engine.predict_space(code)
+    res_tc = engine.predict(code)
+    tc = res_tc["prediction"]
+    tc_reason = res_tc["summary"]
+    tc_breakdown = res_tc["breakdown"]
+    tc_cases = res_tc["cases"]
+    
+    sc, sc_reason, sc_breakdown = engine.predict_space(code)
     print(f"Prediction: Time={tc}, Space={sc}")
     
     if "n³" in tc or "2^n" in tc or "n^3" in tc:
@@ -77,6 +82,9 @@ def analyze():
         "spaceComplexity": sc,
         "summary": f"Analyzed {language} code: {tc_reason} {sc_reason}",
         "insight": insight,
+        "timeBreakdown": tc_breakdown,
+        "spaceBreakdown": sc_breakdown,
+        "cases": tc_cases,
         "chartData": get_chart_data(tc, is_stress=False),
         "stressChartData": get_chart_data(tc, is_stress=True)
     })

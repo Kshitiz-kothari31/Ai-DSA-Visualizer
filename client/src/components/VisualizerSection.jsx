@@ -310,7 +310,7 @@ const VisualizerSection = ({
 
             {/* Render Area wrapped in Xwrapper for arrows */}
             <Xwrapper>
-            <div className="flex-grow overflow-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar relative">
+            <div className="flex-grow overflow-auto p-4 sm:p-6 pb-32 space-y-4 sm:space-y-6 custom-scrollbar relative">
                     {Object.keys(variables).length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-zinc-600">
                              <Database size={40} className="mb-3 opacity-20" />
@@ -320,10 +320,6 @@ const VisualizerSection = ({
                         Object.entries(variables).map(([name, value]) => {
                             // Optionally hide internal system variables
                             if (name.startsWith('__')) return null;
-
-                            // Hide common pointers that are already displayed on the array
-                            const commonPointerNames = ['i', 'j', 'k', 'left', 'right', 'mid', 'low', 'high', 'ptr', 'curr', 'start', 'end'];
-                            if (commonPointerNames.includes(name.toLowerCase())) return null;
 
                             return (
                                 <div key={name} className="animate-in fade-in slide-in-from-bottom-2 duration-500 bg-zinc-900/30 p-3 rounded-lg border border-zinc-800/80 mb-3 backdrop-blur-sm relative shadow-lg overflow-x-auto">

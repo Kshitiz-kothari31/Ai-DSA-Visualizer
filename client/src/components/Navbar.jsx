@@ -53,17 +53,17 @@ export default function Navbar({ onVisualize, onFileUpload, onAiAnalysis }) {
             <div className="flex items-center space-x-2 sm:space-x-3">
                 <button
                     onClick={onVisualize}
-                    className="flex items-center space-x-1.5 sm:space-x-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white px-2.5 py-1.5 sm:px-6 sm:py-2.5 rounded-md text-[10px] sm:text-sm lg:text-base font-bold transition-all border border-[#333] hover:border-[#3b82f6] shadow-sm whitespace-nowrap"
+                    className="flex items-center space-x-1.5 sm:space-x-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white px-3 py-2 sm:px-6 sm:py-2.5 rounded-md text-[10px] sm:text-sm lg:text-base font-bold transition-all border border-[#333] hover:border-[#3b82f6] shadow-sm whitespace-nowrap"
                 >
-                    <Play className="w-3 h-3 sm:w-5 sm:h-5 fill-[#3b82f6] text-[#3b82f6]" />
-                    <span>Visualize</span>
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-[#3b82f6] text-[#3b82f6]" />
+                    <span className="hidden sm:inline">Visualize</span>
                 </button>
                 <button
                     onClick={onAiAnalysis}
-                    className="flex items-center space-x-1.5 sm:space-x-3 bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] hover:brightness-110 text-white px-2.5 py-1.5 sm:px-6 sm:py-2.5 rounded-md text-[10px] sm:text-sm lg:text-base font-bold transition-all shadow-[0_0_15px_rgba(59,130,246,0.5)] transform hover:-translate-y-0.5 whitespace-nowrap"
+                    className="flex items-center space-x-1.5 sm:space-x-3 bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] hover:brightness-110 text-white px-3 py-2 sm:px-6 sm:py-2.5 rounded-md text-[10px] sm:text-sm lg:text-base font-bold transition-all shadow-[0_0_15px_rgba(59,130,246,0.5)] transform hover:-translate-y-0.5 whitespace-nowrap"
                 >
-                    <Bot className="w-3 h-3 sm:w-5 sm:h-5" />
-                    <span>AI Analysis</span>
+                    <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="hidden sm:inline">AI Analysis</span>
                 </button>
                 <div className="hidden sm:block w-px h-6 bg-gray-700 mx-1"></div>
                 <button

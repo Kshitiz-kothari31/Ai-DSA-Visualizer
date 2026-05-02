@@ -198,26 +198,25 @@ class GDBTracer:
                     v_val = parts[1].strip()
                     variables[v_name] = self.parse_gdb_value(v_name, v_val)
 
-            if variables:
-                # DE-DUPLICATION: Only emit if the state or line has changed
-                current_frame_json = json.dumps({"v": variables, "l": line}, sort_keys=True)
-                if current_frame_json == last_frame_json:
-                    # Skip redundant frame and move to next
-                    step_out = self.send_command('next')
-                    if any("exited" in l for l in step_out): break
-                    continue
-                
-                last_frame_json = current_frame_json
-                
-                frame_data = {
-                    "variables": variables,
-                    "line": line,
-                    "event": "line",
-                    "function": func_name,
-                    "stackDepth": 1 
-                }
-                print(f"__VISUALIZE__:{json.dumps(frame_data)}")
-                sys.stdout.flush()
+            # DE-DUPLICATION: Only emit if the state or line has changed
+            current_frame_json = json.dumps({"v": variables, "l": line}, sort_keys=True)
+            if current_frame_json == last_frame_json:
+                # Move to next line
+                step_out = self.send_command('next')
+                if any("exited" in l for l in step_out): break
+                continue
+            
+            last_frame_json = current_frame_json
+            
+            frame_data = {
+                "variables": variables,
+                "line": line,
+                "event": "line",
+                "function": func_name,
+                "stackDepth": 1 
+            }
+            print(f"__VISUALIZE__:{json.dumps(frame_data)}")
+            sys.stdout.flush()
 
             # Move to next line
             step_out = self.send_command('next')

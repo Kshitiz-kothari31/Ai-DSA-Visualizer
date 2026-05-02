@@ -39,7 +39,7 @@ export default function RunnerSection({ output = [], isRunning, onInput, onShell
             </div>
             <div 
                 ref={scrollRef}
-                className="flex-grow p-4 lg:p-6 font-mono text-sm lg:text-base bg-black text-[#a1a1aa] selection:bg-[#3b82f6]/30"
+                className="flex-grow p-4 lg:p-6 font-mono text-sm lg:text-base bg-black text-[#a1a1aa] selection:bg-[#3b82f6]/30 overflow-y-auto custom-scrollbar"
             >
                 {output.length === 0 && !isRunning ? (
                     <div className="text-gray-600 italic mb-2">Terminal ready. Type a command or run your code.</div>

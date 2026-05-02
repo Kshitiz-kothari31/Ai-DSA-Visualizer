@@ -101,21 +101,32 @@ export default function EditorPage() {
   // Language change removed (C++ only)
 
   const handleVisualize = useCallback(() => {
+    if (!isDesktop) {
+      setIsRunnerVisible(false);
+      setIsAiAnalysisVisible(false);
+    }
     setIsVisualizerVisible(true);
-    // Removed auto-open of terminal per user request
     executeCode(code, language, 'visualize');
-  }, [code, language, executeCode]);
+  }, [code, language, executeCode, isDesktop]);
 
   const handleRun = useCallback(() => {
+    if (!isDesktop) {
+      setIsVisualizerVisible(false);
+      setIsAiAnalysisVisible(false);
+    }
     setIsRunnerVisible(true);
-    if (clearOutput) clearOutput(); // Ensure fresh console
+    if (clearOutput) clearOutput();
     executeCode(code, language, 'run');
-  }, [code, language, executeCode, clearOutput]);
+  }, [code, language, executeCode, clearOutput, isDesktop]);
 
   const handleAiAnalysis = useCallback(() => {
+    if (!isDesktop) {
+      setIsVisualizerVisible(false);
+      setIsRunnerVisible(false);
+    }
     setIsAiAnalysisVisible(true);
     analyzeCode(code, language);
-  }, [code, language, analyzeCode]);
+  }, [code, language, analyzeCode, isDesktop]);
 
   // --- Resize Handlers ---
   const handleVerticalResize = useCallback((e) => {
@@ -226,27 +237,29 @@ export default function EditorPage() {
           className={`relative flex flex-col border-b lg:border-b-0 lg:border-r border-[#1f1f1f] ${isResizing ? '' : 'transition-all duration-300 ease-in-out'}`}
           style={{
             width: isDesktop && isRightPanelOpen ? `${100 - sidePanelWidth}%` : '100%',
-            height: !isDesktop && isRightPanelOpen ? '50%' : '100%'
+            height: !isDesktop && isRightPanelOpen ? '0%' : '100%',
+            display: !isDesktop && isRightPanelOpen ? 'none' : 'flex'
           }}
         >
-          <div className="flex-grow w-full relative min-h-0">
-
-            <EditorSection
-              code={code}
-              language={language}
-              onLanguageChange={() => { }} // Disabled
-              onChange={setCode}
-              onRun={handleRun}
-            />
+          <div className={`flex-grow w-full relative min-h-0 ${!isDesktop && isRunnerVisible ? 'hidden' : 'block'} ${!isDesktop ? 'p-3 bg-[#050505]' : ''}`}>
+            <div className={`h-full w-full overflow-hidden ${!isDesktop ? 'rounded-xl border border-[#1f1f1f] shadow-2xl' : ''}`}>
+              <EditorSection
+                code={code}
+                language={language}
+                onLanguageChange={() => { }} // Disabled
+                onChange={setCode}
+                onRun={handleRun}
+              />
+            </div>
           </div>
 
           <AnimatePresence>
             {isRunnerVisible && (
               <>
-                <Resizer direction="vertical" onMouseDown={handleVerticalResize} />
+                {isDesktop && <Resizer direction="vertical" onMouseDown={handleVerticalResize} />}
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: `${bottomPanelHeight}%`, opacity: 1 }}
+                  animate={{ height: !isDesktop ? '100%' : `${bottomPanelHeight}%`, opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={isResizing ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 120 }}
                   className="w-full border-t border-[#333] z-50 bg-[#0a0a0a] overflow-hidden flex-shrink-0"
@@ -324,7 +337,14 @@ export default function EditorPage() {
       {/* Global Bottom Bar */}
       <div className="h-14 bg-[#0a0a0a] border-t border-[#1f1f1f] flex items-center px-8 shrink-0 z-[60]">
         <button
-          onClick={() => setIsRunnerVisible(!isRunnerVisible)}
+          onClick={() => {
+            const nextState = !isRunnerVisible;
+            if (nextState && !isDesktop) {
+              setIsVisualizerVisible(false);
+              setIsAiAnalysisVisible(false);
+            }
+            setIsRunnerVisible(nextState);
+          }}
           className={`flex items-center space-x-4 text-base font-black transition-colors ${isRunnerVisible ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
         >
           <Terminal className="w-5 h-5" />
