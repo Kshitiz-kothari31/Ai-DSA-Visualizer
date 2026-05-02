@@ -189,12 +189,12 @@ export default function AiAnalysisSection({ analysisData, isAnalyzing, onClose }
                         </h3>
                         <button 
                             onClick={() => setIsStressTest(!isStressTest)}
-                            className={`px-4 py-2 text-sm font-bold rounded uppercase tracking-wider transition-colors ${isStressTest ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-[#1f1f1f] text-gray-400 hover:text-white border border-[#2a2a2a]'}`}
+                            className={`px-2 py-1 sm:px-4 sm:py-2 text-[10px] sm:text-sm font-bold rounded uppercase tracking-wider transition-colors ${isStressTest ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-[#1f1f1f] text-gray-400 hover:text-white border border-[#2a2a2a]'}`}
                         >
-                            {isStressTest ? 'Stress Test ON' : 'Stress Test OFF'}
+                            {isStressTest ? 'STRESS TEST ON' : 'STRESS TEST OFF'}
                         </button>
                     </div>
-                    <div className="h-[300px] lg:h-[400px] w-full">
+                    <div className="h-[220px] lg:h-[400px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart
                                 data={isStressTest ? analysisData.stressChartData : analysisData.chartData}

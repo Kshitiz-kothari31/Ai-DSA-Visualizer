@@ -4,17 +4,17 @@ import { Play } from 'lucide-react';
 
 const EditorSection = React.memo(({ code, language, onLanguageChange, onChange, onRun }) => {
     return (
-        <div className="h-full w-full flex flex-col bg-black">
-            <div className="px-4 py-2 border-b border-[#1f1f1f] bg-[#0a0a0a] flex items-center justify-between">
+        <div className="h-full w-full flex flex-col bg-black overflow-hidden relative">
+            <div className="sticky top-0 z-20 px-3 sm:px-4 py-1.5 sm:py-2 border-b border-[#1f1f1f] bg-[#0a0a0a]/90 backdrop-blur-md flex items-center justify-between">
                 <div className="flex items-center space-x-2 sm:space-x-4">
                     <span className="text-[11px] lg:text-[13px] font-bold text-zinc-400 uppercase tracking-[0.2em] hidden sm:inline">C++ Code Editor</span>
-                    <span className="text-xs bg-zinc-900 border border-[#333] rounded px-3 py-1 text-[#3b82f6] font-bold">C++</span>
+                    <span className="text-[10px] sm:text-xs bg-zinc-900 border border-[#333] rounded px-2 py-0.5 sm:px-3 sm:py-1 text-[#3b82f6] font-bold">C++</span>
                 </div>
                 <button 
                   onClick={onRun}
-                  className="flex items-center space-x-2 px-4 py-1.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-md text-sm lg:text-base font-bold transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+                  className="flex items-center space-x-1.5 px-2.5 py-1 sm:px-4 sm:py-1.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-md text-[10px] sm:text-sm lg:text-base font-bold transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]"
                 >
-                  <Play className="w-4 h-4 fill-current" />
+                  <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
                   <span>Run</span>
                 </button>
             </div>
