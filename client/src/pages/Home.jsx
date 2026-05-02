@@ -57,9 +57,9 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative h-screen flex flex-col items-center justify-center pt-20">
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-20">
         {/* 3D Background */}
-        <div className="absolute inset-0 z-0 opacity-60">
+        <div className="absolute inset-0 z-0 opacity-60 overflow-hidden">
           <Canvas camera={{ position: [0, 0, 6] }}>
             <ambientLight intensity={0.2} />
             <directionalLight position={[10, 10, 5]} intensity={1} />
@@ -82,26 +82,26 @@ export default function Home() {
               transition={{ delay: 0.5 }}
               className="inline-block p-1 border border-indigo-500/30 rounded-full mb-8 bg-indigo-500/10 backdrop-blur-md"
             >
-              <span className="px-4 py-1.5 text-xs font-bold tracking-wider text-indigo-300 uppercase">Koda OS v2.0 Now Live</span>
+              <span className="px-4 py-1.5 text-[10px] sm:text-xs font-bold tracking-wider text-indigo-300 uppercase">Koda OS v2.0 Now Live</span>
             </motion.div>
             
-            <h1 className="text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-extrabold tracking-tight mb-8 text-transparent bg-clip-text bg-gradient-to-br from-white via-gray-200 to-gray-500 leading-tight">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight mb-6 lg:mb-8 text-transparent bg-clip-text bg-gradient-to-br from-white via-gray-200 to-gray-500 leading-tight">
               Master Code Dynamics. <br/>
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-500">
-                Predict the Future.
+                Elevate Your Logic.
               </span>
             </h1>
             
-            <p className="mt-4 text-lg md:text-xl lg:text-2xl text-gray-400 max-w-3xl mx-auto mb-12 leading-relaxed font-light">
+            <p className="mt-4 text-sm md:text-lg lg:text-xl text-gray-400 max-w-2xl mx-auto mb-10 lg:mb-12 leading-relaxed font-light px-4">
               The ultimate professional suite for real-time algorithm tracing and Machine Learning driven Big-O complexity analysis.
             </p>
             
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
               <Link to="/signup">
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-6 py-3 bg-white text-black rounded-full font-bold text-base shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all flex items-center space-x-2"
+                  className="px-6 py-3 lg:px-8 lg:py-4 bg-white text-black rounded-full font-bold text-sm lg:text-base shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all flex items-center space-x-2"
                 >
                   <span>Start Building</span>
                   <Zap className="w-4 h-4" />
@@ -111,7 +111,7 @@ export default function Home() {
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-6 py-3 bg-transparent border border-gray-700 text-white rounded-full font-bold text-base hover:border-gray-400 hover:bg-white/5 transition-all"
+                  className="px-6 py-3 lg:px-8 lg:py-4 bg-transparent border border-gray-700 text-white rounded-full font-bold text-sm lg:text-base hover:border-gray-400 hover:bg-white/5 transition-all"
                 >
                   Log In
                 </motion.button>
@@ -125,7 +125,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5, duration: 1 }}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center text-gray-500"
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center text-gray-500"
         >
             <span className="text-xs uppercase tracking-widest mb-2 font-semibold">Discover</span>
             <div className="w-[1px] h-12 bg-gradient-to-b from-gray-500 to-transparent"></div>

@@ -241,8 +241,8 @@ export default function EditorPage() {
             display: !isDesktop && isRightPanelOpen ? 'none' : 'flex'
           }}
         >
-          <div className={`flex-grow w-full relative min-h-0 ${!isDesktop && isRunnerVisible ? 'hidden' : 'block'} ${!isDesktop ? 'p-3 bg-[#050505]' : ''}`}>
-            <div className={`h-full w-full overflow-hidden ${!isDesktop ? 'rounded-xl border border-[#1f1f1f] shadow-2xl' : ''}`}>
+          <div className={`flex-grow w-full relative min-h-0 ${!isDesktop && isRunnerVisible ? 'hidden' : 'block'}`}>
+            <div className={`w-full overflow-hidden ${!isDesktop ? 'h-[90%]' : 'h-full'}`}>
               <EditorSection
                 code={code}
                 language={language}
