@@ -46,9 +46,25 @@ class GDBTracer:
         
         return output.replace('(gdb) ', '').splitlines()
 
-    def parse_gdb_value(self, name, val_str, depth=0):
+    def parse_gdb_value(self, name, val_str, depth=0, context=None):
         if depth > 5: return "<Truncated>"
         val_str = val_str.strip()
+
+        # Handle std::vector specifically by detecting its internal structure
+        # Heuristic: If it contains _M_start and _M_finish, it's likely a libstdc++ vector
+        if '_M_start' in val_str and '_M_finish' in val_str:
+            try:
+                # Attempt to get size: (_M_finish - _M_start)
+                # We use 'output' to avoid the $N = prefix
+                size_out = self.send_command(f'output ({name}._M_impl._M_finish - {name}._M_impl._M_start)')
+                if size_out and size_out[0].strip().isdigit():
+                    size = int(size_out[0].strip())
+                    if 0 < size <= 100:
+                        elements_out = self.send_command(f'output *({name}._M_impl._M_start)@{size}')
+                        if elements_out and elements_out[0].strip().startswith('{'):
+                            return self.parse_value_content(name, elements_out[0].strip(), depth + 1)
+            except:
+                pass # Fallback to normal struct parsing
 
         # Handle Pointers (e.g. 0x123456)
         ptr_match = re.search(r'0x[0-9a-fA-F]+', val_str)
@@ -59,12 +75,35 @@ class GDBTracer:
             if addr in self.visited:
                 return {"__ref": self.visited[addr]}
             
-            # New address found! Try to dereference it.
+            # New address found!
             obj_id = str(self.id_counter)
             self.id_counter += 1
             self.visited[addr] = obj_id
             
-            # Try to print the dereferenced object
+            # HEURISTIC: Is this pointer actually an array?
+            # Check context for variables like 'n', 'size', 'len'
+            detected_size = None
+            if context:
+                for s_name in ['n', 'size', 'len', 'length', 'N', 'SIZE', 'count']:
+                    if s_name in context:
+                        try:
+                            s_val = context[s_name].split()[0] # Handle "10" or "10 ..."
+                            if s_val.isdigit():
+                                detected_size = int(s_val)
+                                break
+                        except: pass
+            
+            if detected_size and 0 < detected_size <= 100:
+                # Try to print as array
+                deref_out = self.send_command(f'output *({name})@{detected_size}')
+                if deref_out and deref_out[0].strip().startswith('{'):
+                    res = self.parse_value_content(name, deref_out[0].strip(), depth + 1)
+                    if isinstance(res, dict):
+                        res['__id'] = obj_id
+                        res['__type'] = 'array'
+                    return res
+
+            # Fallback: Just print the dereferenced single object
             deref_out = self.send_command(f'print *({name})')
             if deref_out and '=' in deref_out[0]:
                 content = '='.join(deref_out[0].split('=')[1:]).strip()
@@ -108,10 +147,16 @@ class GDBTracer:
         if val_str in ['true', 'false']: return val_str == 'true'
         
         # Strings/Chars
-        if val_str.startswith('"') and val_str.endswith('"'):
-            return val_str[1:-1]
-        if val_str.startswith("'") and val_str.endswith("'"):
-            return val_str[1:-1]
+        if val_str.startswith('"'):
+            # GDB sometimes adds extra info like 0x... "string"
+            s_match = re.search(r'"(.*)"', val_str)
+            if s_match: return s_match.group(1)
+            return val_str.strip('"')
+            
+        if val_str.startswith("'"):
+            c_match = re.search(r"'(.*)'", val_str)
+            if c_match: return c_match.group(1)
+            return val_str.strip("'")
             
         return val_str
 
@@ -185,18 +230,21 @@ class GDBTracer:
             func_match = re.search(r'#0\s+([\w:]+)', where[0])
             if func_match: func_name = func_match.group(1)
 
-            # Collect Variables
-            self.visited = {} # Fresh tracking per step to capture changes
+            # Collect Variables with context awareness
+            self.visited = {} 
             locals_out = self.send_command('info locals')
             args_out = self.send_command('info args')
             
-            variables = {}
+            # Pre-parse to get all raw values (context for pointer-to-array heuristics)
+            raw_context = {}
             for line_str in (locals_out + args_out):
                 if '=' in line_str:
                     parts = line_str.split('=', 1)
-                    v_name = parts[0].strip()
-                    v_val = parts[1].strip()
-                    variables[v_name] = self.parse_gdb_value(v_name, v_val)
+                    raw_context[parts[0].strip()] = parts[1].strip()
+
+            variables = {}
+            for v_name, v_val in raw_context.items():
+                variables[v_name] = self.parse_gdb_value(v_name, v_val, context=raw_context)
 
             # DE-DUPLICATION: Only emit if the state or line has changed
             current_frame_json = json.dumps({"v": variables, "l": line}, sort_keys=True)

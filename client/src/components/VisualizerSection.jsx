@@ -39,7 +39,7 @@ const ArrayViewer = ({ data, rootVariables }) => {
     // Find variables that act as pointers (i.e., integers that match the index)
     const pointersForIndex = (idx) => {
         const pointers = [];
-        const commonPointerNames = ['i', 'j', 'k', 'left', 'right', 'mid', 'low', 'high', 'ptr', 'curr', 'start', 'end'];
+        const commonPointerNames = ['i', 'j', 'k', 'l', 'r', 'm', 'left', 'right', 'mid', 'low', 'high', 'ptr', 'curr', 'start', 'end'];
         
         for (const [vName, vVal] of Object.entries(rootVariables)) {
             if (commonPointerNames.includes(vName.toLowerCase()) && typeof vVal === 'number' && vVal === idx) {
@@ -55,57 +55,62 @@ const ArrayViewer = ({ data, rootVariables }) => {
         right: 'bg-rose-500',
         high: 'bg-rose-500',
         mid: 'bg-amber-500',
+        m: 'bg-amber-500',
         i: 'bg-sky-500',
         j: 'bg-indigo-500',
+        l: 'bg-emerald-500',
+        r: 'bg-rose-500',
     };
 
     return (
         <div className="flex items-end gap-2 py-10 px-4 min-h-[120px]" id={arrayId}>
             <AnimatePresence mode="popLayout">
                 {actualData.map((item, idx) => {
-                    const pointers = pointersForIndex(idx);
-                    return (
-                        <motion.div 
-                            key={idx} 
-                            layout
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                            className="flex flex-col items-center gap-1.5 relative group" 
-                            id={`obj-${item?.__id || ''}`}
-                        >
-                            {/* Dynamic Pointer Arrows */}
-                            {pointers.length > 0 && (
-                                <motion.div 
-                                    layoutId={`pointers-${pointers.join('-')}`}
-                                    className="absolute bottom-full mb-2 flex flex-col-reverse items-center"
-                                >
-                                    <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-zinc-400 mt-1" />
-                                    <div className="flex flex-col gap-1 items-center">
-                                        {pointers.map(p => {
-                                            const color = POINTER_COLORS[p.toLowerCase()] || 'bg-sky-500';
-                                            return (
-                                                <motion.span 
-                                                    key={p} 
-                                                    layout
-                                                    className={`${color} text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg uppercase tracking-tighter`}
-                                                >
-                                                    {p}
-                                                </motion.span>
-                                            );
-                                        })}
-                                    </div>
-                                </motion.div>
-                            )}
-                            
+                        const pointers = pointersForIndex(idx);
+                        const isTarget = item === rootVariables['target'] || item === rootVariables['key'] || item === rootVariables['x'];
+                        
+                        return (
                             <motion.div 
+                                key={idx} 
                                 layout
-                                className="w-10 h-10 flex items-center justify-center border-2 border-zinc-600 bg-zinc-800 text-zinc-100 font-mono text-xs rounded hover:border-sky-500 transition-colors shadow-lg relative"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                className="flex flex-col items-center gap-1.5 relative group" 
+                                id={`obj-${item?.__id || ''}`}
                             >
-                                {isPrimitive(item) ? String(item) : (item.__ref ? 'Ref' : 'Obj')}
-                                {item?.__ref && <Xarrow start={`obj-${item.__ref}-ptr-${idx}`} end={`obj-${item.__ref}`} showHead={true} color="#a1a1aa" />}
-                            </motion.div>
+                                {/* Dynamic Pointer Arrows */}
+                                {pointers.length > 0 && (
+                                    <motion.div 
+                                        layoutId={`pointers-${pointers.join('-')}`}
+                                        className="absolute bottom-full mb-2 flex flex-col-reverse items-center"
+                                    >
+                                        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-zinc-400 mt-1" />
+                                        <div className="flex flex-col gap-1 items-center">
+                                            {pointers.map(p => {
+                                                const color = POINTER_COLORS[p.toLowerCase()] || 'bg-sky-500';
+                                                return (
+                                                    <motion.span 
+                                                        key={p} 
+                                                        layout
+                                                        className={`${color} text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg uppercase tracking-tighter`}
+                                                    >
+                                                        {p}
+                                                    </motion.span>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                )}
+                                
+                                <motion.div 
+                                    layout
+                                    className={`w-10 h-10 flex items-center justify-center border-2 ${isTarget ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'border-zinc-600 bg-zinc-800'} text-zinc-100 font-mono text-xs rounded hover:border-sky-500 transition-all shadow-lg relative`}
+                                >
+                                    {isPrimitive(item) ? String(item) : (item.__ref ? 'Ref' : 'Obj')}
+                                    {item?.__ref && <Xarrow start={`obj-${item.__ref}-ptr-${idx}`} end={`obj-${item.__ref}`} showHead={true} color="#a1a1aa" />}
+                                </motion.div>
                             <span className="text-[9px] text-zinc-500 font-mono bg-zinc-900 px-1 rounded">{idx}</span>
                         </motion.div>
                     );
@@ -267,8 +272,8 @@ const DataDispatcher = ({ data, path, rootVariables }) => {
         // Pointer mapping! Graph reference visually.
         return (
             <div className="relative inline-flex flex-col items-center">
-                <div id={`ptr-${path}`} className="px-3 py-1 bg-zinc-800 border-2 border-zinc-600 rounded-lg text-xs font-mono text-zinc-300 shadow-md">
-                    Pointer
+                <div id={`ptr-${path}`} className="px-3 py-1 bg-zinc-800 border-2 border-zinc-600 rounded-lg text-[10px] font-mono text-zinc-300 shadow-md">
+                    Ptr: {data.address || '0x...'}
                 </div>
                 <Xarrow start={`ptr-${path}`} end={`obj-${data.__ref}`} showHead={true} color="#38bdf8" strokeWidth={2} dashness={true} headSize={4} />
             </div>
