@@ -10,10 +10,21 @@ import threading
 import json
 import time
 import signal
+import sys
+import io
+
+# Enforce UTF-8 for Windows console and suppress encoding errors globally
+import sys
+import io
+
+# Force UTF-8 for all standard streams
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 app = Flask(__name__)
-# In production, set cors_allowed_origins to your frontend URL
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+# Disable internal logging that clutters the Windows console and causes charmap crashes
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', logger=False, engineio_logger=False)
 CORS(app)
 
 # Initialize Complexity Analyzer
@@ -91,53 +102,54 @@ def analyze():
 
 # --- WebSocket Execution Engine ---
 
-def stream_output(sid, process, files_to_cleanup):
+def stream_output(sid, process, files_to_cleanup, mode='run'):
     try:
         buffer = ""
         while True:
-            # Read one byte at a time to handle prompts without newlines (like input("Prompt: "))
+            # Read one byte at a time to handle prompts without newlines
             char_bytes = process.stdout.read(1)
             
             if not char_bytes:
                 if process.poll() is not None:
                     break
-                socketio.sleep(0.01) # Use socketio.sleep for better async compatibility
+                socketio.sleep(0.01)
                 continue
             
-            char_text = char_bytes.decode('utf-8', errors='replace')
-            buffer += char_text
+            if active_processes.get(sid) != process:
+                return # Silently die if we are a zombie thread replaced by a new run
             
-            if char_text == '\n':
-                # Check if this full line was a visualization frame
-                if '__VISUALIZE__:' in buffer:
-                    try:
-                        json_str = buffer.split('__VISUALIZE__:')[1].strip()
-                        frame_data = json.loads(json_str)
-                        socketio.emit('terminal:visualize-frame', frame_data, room=sid)
-                    except Exception as e:
-                        print(f"JSON Parse Error: {str(e)}")
-                        socketio.emit('terminal:output', {'data': buffer}, room=sid)
-                else:
-                    if buffer:
-                        socketio.emit('terminal:output', {'data': buffer}, room=sid)
-                buffer = ""
+            char_text = char_bytes.decode('utf-8', errors='replace')
+            
+            if mode == 'run':
+                # In run mode, emit every character instantly for interactive feel
+                socketio.emit('terminal:output', {'data': char_text}, room=sid)
             else:
-                # HARD LOCK: If we are building a visualization frame, DO NOT flush to terminal.
-                # Wait until the newline flushes it to the correct 'visualize-frame' channel.
-                if "__VISUALIZE__" in buffer or "__VISUALIZE__".startswith(buffer):
-                    continue
+                buffer += char_text
                 
-                if buffer:
+                # Check if buffer could be a tag
+                if '__VISUALIZE__:'.startswith(buffer):
+                    # It's matching the prefix, keep buffering
+                    pass
+                elif buffer.startswith('__VISUALIZE__:'):
+                    # We are inside a tag, buffer until newline
+                    if char_text == '\n':
+                        try:
+                            parts = buffer.split('__VISUALIZE__:', 1)
+                            if parts[0]: socketio.emit('terminal:output', {'data': parts[0]}, room=sid)
+                            socketio.emit('terminal:visualize-frame', json.loads(parts[1]), room=sid)
+                        except:
+                            socketio.emit('terminal:output', {'data': buffer}, room=sid)
+                        buffer = ""
+                else:
+                    # It's definitely not a tag. Emit everything instantly!
                     socketio.emit('terminal:output', {'data': buffer}, room=sid)
                     buffer = ""
         
-        # Final stderr capture
-        stderr = process.stderr.read().decode('utf-8', errors='replace')
-        if stderr:
-            socketio.emit('terminal:output', {'data': stderr}, room=sid)
-            
-        return_code = process.wait()
-        socketio.emit('terminal:exit', {'code': return_code}, room=sid)
+        # Return code handling
+        if active_processes.get(sid) == process:
+            return_code = process.wait()
+            socketio.emit('terminal:exit', {'code': return_code}, room=sid)
+
 
         
     except Exception as e:
@@ -154,17 +166,20 @@ def stream_output(sid, process, files_to_cleanup):
 @socketio.on('terminal:run')
 def handle_run(data):
     sid = request.sid
-    code = data.get('code')
-    language = data.get('language')
     mode = data.get('mode', 'run')
+    language = data.get('language', 'cpp')
+    code = data.get('code', '')
     
-    print(f"[HEARTBEAT] Received run request. SID: {sid}, Mode: {mode}, Lang: {language}")
-    socketio.emit('terminal:output', {'data': f"System: Initializing {mode} mode...\n"}, room=sid)
+    # Professional Handshake & Command Feed
+    socketio.sleep(0.05)
+    socketio.emit('terminal:output', {'data': f"KODA ~ $ g++ -g prog.cpp -o prog.exe\n"}, room=sid)
+    socketio.emit('terminal:output', {'data': f"KODA ~ $ .\\prog.exe\n"}, room=sid)
     
     # Kill any existing process for this session
     if sid in active_processes:
         try:
             active_processes[sid].terminate()
+            del active_processes[sid]
         except: pass
 
     temp_dir = tempfile.gettempdir()
@@ -176,20 +191,31 @@ def handle_run(data):
         exe_file = os.path.join(temp_dir, f'prog_{unique_id}.exe')
         files_to_cleanup.extend([src_file, exe_file])
         
-        with open(src_file, 'w') as f: f.write(code)
+        with open(src_file, 'w', encoding='utf-8') as f: f.write(code)
         
         # Compile with debug symbols (-g) for C++
-        compile_res = subprocess.run(['g++', '-g', src_file, '-o', exe_file], capture_output=True, text=True)
+        try:
+            # Use raw bytes to avoid charmap issues with ASCII art in warnings
+            compile_res = subprocess.run(['g++', '-g', src_file, '-o', exe_file], capture_output=True, timeout=15)
+        except subprocess.TimeoutExpired:
+            socketio.emit('terminal:output', {'data': "\nCompilation Error: Timeout.\n"}, room=sid)
+            socketio.emit('terminal:exit', {'code': 1}, room=sid)
+            return
+
         if compile_res.returncode != 0:
-            emit('terminal:output', {'data': compile_res.stderr})
-            emit('terminal:exit', {'code': 1})
+            err_text = compile_res.stderr.decode('utf-8', errors='replace')
+            socketio.emit('terminal:output', {'data': f"\nCompilation Error:\n{err_text}\n"}, room=sid)
+            socketio.emit('terminal:exit', {'code': 1}, room=sid)
             return
         
         if mode == 'visualize':
+            # VISUALIZER PATH: Uses the Python tracer with GDB
             tracer_path = os.path.join(os.path.dirname(__file__), 'scripts', 'cpp_tracer.py')
             import sys
-            cmd = [sys.executable, tracer_path, exe_file]
+            cmd = [sys.executable, '-u', tracer_path, exe_file]
+            socketio.emit('terminal:output', {'data': "System: Starting Code Visualizer...\n"}, room=sid)
         else:
+            # RUN PATH: Direct execution (Don't touch this!)
             cmd = [exe_file]
 
         # Spawn the process
@@ -197,18 +223,22 @@ def handle_run(data):
             cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             bufsize=0 # Direct streaming
         )
         
         active_processes[sid] = process
         
         # Start a background thread to handle output
-        socketio.start_background_task(stream_output, sid, process, files_to_cleanup)
+        socketio.start_background_task(stream_output, sid, process, files_to_cleanup, mode)
         
     except Exception as e:
-        emit('terminal:output', {'data': f"Backend Error: {str(e)}"})
-        emit('terminal:exit', {'code': 1})
+        # Final safety catch for encoding errors
+        error_msg = str(e)
+        if 'charmap' in error_msg:
+             error_msg = "Encoding Error: Please avoid non-ASCII characters in code if possible, or restart the backend."
+        socketio.emit('terminal:output', {'data': f"Backend Error: {error_msg}\n"}, room=sid)
+        socketio.emit('terminal:exit', {'code': 1}, room=sid)
 
 @socketio.on('terminal:input')
 def handle_input(data):

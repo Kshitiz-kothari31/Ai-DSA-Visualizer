@@ -5,39 +5,44 @@ export function useExecution() {
     const [isRunning, setIsRunning] = useState(false);
     const [output, setOutput] = useState([]);
     const [stateList, setStateList] = useState([]);
-    
+
     const inputResolver = useRef(null);
     const socketRef = useRef(null);
 
     // Initialize Socket
     useEffect(() => {
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+        }
+
         let baseUrl = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:5001';
-        // Cleanup: Remove trailing slash if present
         baseUrl = baseUrl.replace(/\/$/, "");
-        
+
         console.log(`[Socket] Connecting to: ${baseUrl}`);
 
-        socketRef.current = io(baseUrl, {
-            transports: ['websocket', 'polling'],
-            reconnection: true
+        const newSocket = io(baseUrl, {
+            transports: ['websocket'],
+            reconnection: true,
+            forceNew: true
         });
 
-        socketRef.current.on('connect', () => {
+        socketRef.current = newSocket;
+
+        newSocket.on('connect', () => {
             console.log('[Socket] Connected successfully!');
         });
 
-        socketRef.current.on('connect_error', (err) => {
-            console.error('[Socket] Connection error:', err.message);
-            setOutput(prev => [...prev, `Backend Connection Error: ${err.message}. Check if VITE_ENGINE_API_URL is set correctly.`]);
-        });
-
-        socketRef.current.on('terminal:output', ({ data }) => {
+        newSocket.on('terminal:output', ({ data }) => {
+            const incoming = data.split('\n');
             setOutput(prev => {
-                const incoming = data.split('\n');
                 const next = [...prev];
-                if (next.length === 0) next.push("");
-                
+                if (next.length === 0) {
+                    next.push("");
+                }
+
+                // Strings are primitives, so this perfectly bypasses React Strict Mode double-mutation!
                 next[next.length - 1] += incoming[0];
+
                 for (let i = 1; i < incoming.length; i++) {
                     next.push(incoming[i]);
                 }
@@ -45,22 +50,24 @@ export function useExecution() {
             });
         });
 
-        socketRef.current.on('terminal:exit', ({ code }) => {
+
+        newSocket.on('terminal:exit', ({ code }) => {
             setIsRunning(false);
-            if (code !== undefined) setOutput(prev => [...prev, `Process exited with code ${code}`]);
+            if (code !== undefined) {
+                setOutput(prev => [...prev, `\nProcess exited with code ${code}`]);
+            }
         });
 
-        socketRef.current.on('terminal:visualize-frame', (frame) => {
+
+        newSocket.on('terminal:visualize-frame', (frame) => {
             if (frame.variables) {
-                setStateList(prev => [...prev, {
-                    variables: frame.variables,
-                    line: frame.line
-                }]);
+                setStateList(prev => [...prev, frame]);
             }
         });
 
         return () => {
-            if (socketRef.current) socketRef.current.disconnect();
+            newSocket.disconnect();
+            socketRef.current = null;
         };
     }, []);
 
@@ -75,7 +82,16 @@ export function useExecution() {
             inputResolver.current(input);
             inputResolver.current = null;
         }
-        
+
+        // Echo the user's input to the terminal to match native behavior
+        setOutput(prev => {
+            const next = [...prev];
+            if (next.length === 0) next.push("");
+            next[next.length - 1] += input + '\n';
+            next.push(""); // Prepare next line
+            return next;
+        });
+
         if (socketRef.current) {
             socketRef.current.emit('terminal:input', { input });
         } else if (import.meta.hot) {
@@ -109,7 +125,7 @@ export function useExecution() {
         const cloneDeep = (val) => {
             if (val === null || val === undefined) return val;
             if (typeof val !== 'object') return val;
-            
+
             if (memory.has(val)) {
                 return { __ref: memory.get(val) };
             }
@@ -140,54 +156,33 @@ export function useExecution() {
         return snapshot;
     };
 
-    const executeCode = useCallback(async (code, language = 'cpp', mode = 'visualize') => {
+    const lastRequestTime = useRef(0);
+
+    const executeCode = useCallback((code, language = 'cpp') => {
+        const now = Date.now();
+        if (now - lastRequestTime.current < 800) return; // Prevent double-triggers
+        lastRequestTime.current = now;
+
         setIsRunning(true);
-        setOutput([]);
-        setStateList([]);
-
-        // Native Tracing for C++
+        setOutput([""]);
         if (socketRef.current) {
-            setOutput([`Initializing C++ Native Tracer...`]);
-            socketRef.current.emit('terminal:run', { code, language: 'cpp', mode });
-        } else if (import.meta.hot) {
-            setOutput([`Initializing C++ Native Tracer...`]);
-            import.meta.hot.send('terminal:run', { code, language: 'cpp', mode });
-        } else {
-            setOutput(['Terminal requires a connected backend or Vite Dev Server.']);
-            setIsRunning(false);
+            socketRef.current.emit('terminal:run', { code, language, mode: 'run' });
         }
     }, []);
 
-    // Terminal listeners
-    useEffect(() => {
-        if (import.meta.hot) {
-            const handleOutput = ({ data }) => {
-                const newLines = data.split('\n');
-                setOutput(prev => [...prev, ...newLines.filter(l => l !== '')]);
-            };
-            const handleExit = ({ code }) => {
-                setIsRunning(false);
-                if (code !== undefined) setOutput(prev => [...prev, `Process exited with code ${code}`]);
-            };
-            const handleVisualizeFrame = (frame) => {
-                // Real-time frame capture from native processes
-                setStateList(prev => [...prev, {
-                    variables: frame.variables, // Robust tracers already provided snapshots
-                    line: frame.line
-                }]);
-            };
+    const visualizeCode = useCallback((code, language = 'cpp') => {
+        const now = Date.now();
+        if (now - lastRequestTime.current < 800) return; // Prevent double-triggers
+        lastRequestTime.current = now;
 
-            import.meta.hot.on('terminal:output', handleOutput);
-            import.meta.hot.on('terminal:exit', handleExit);
-            import.meta.hot.on('terminal:visualize-frame', handleVisualizeFrame);
-
-            return () => {
-                import.meta.hot.off('terminal:output', handleOutput);
-                import.meta.hot.off('terminal:exit', handleExit);
-                import.meta.hot.off('terminal:visualize-frame', handleVisualizeFrame);
-            };
+        setIsRunning(true);
+        setStateList([]);
+        setOutput(["System: Initializing Visualization Bridge..."]);
+        
+        if (socketRef.current) {
+            socketRef.current.emit('terminal:run', { code, language, mode: 'visualize' });
         }
     }, []);
 
-    return { isRunning, output, stateList, executeCode, sendInput, executeShellCommand, clearOutput };
+    return { isRunning, output, stateList, executeCode, visualizeCode, sendInput, executeShellCommand, clearOutput };
 }

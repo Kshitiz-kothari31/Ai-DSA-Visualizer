@@ -275,7 +275,13 @@ class MLComplexityAnalyzer:
 
         # Hybrid Decision for Space
         final_prediction = prediction
-        if confidence < 50:
+        
+        # Rule-based Override: If no data structures (structs), arrays (dims), or recursion are detected,
+        # it is almost certainly O(1) space, even if the ML model is confused by loops.
+        if features[6] == 0 and features[5] == 0 and features[2] == 0:
+            final_prediction = "O(1)"
+            summary = "Space Analysis: O(1). Only auxiliary variables detected, no scaling data structures."
+        elif confidence < 50:
             final_prediction = heuristic_sc
             summary = f"Rule-based Space Analysis: {final_prediction}. (ML Confidence: {confidence:.1f}%)"
         else:

@@ -44,7 +44,7 @@ export default function EditorPage() {
   const [language] = useState('cpp');
   const [code, setCode] = useState(DEFAULT_CODE.cpp);
 
-  const { isRunning, output, stateList, executeCode, sendInput, clearOutput, executeShellCommand } = useExecution();
+  const { isRunning, output, stateList, executeCode, visualizeCode, sendInput, clearOutput, executeShellCommand } = useExecution();
   const { isAnalyzing, analysisData, analyzeCode } = useAiAnalysis();
 
   const [isRunnerVisible, setIsRunnerVisible] = useState(false);
@@ -53,6 +53,7 @@ export default function EditorPage() {
 
   const [currentStateIndex, setCurrentStateIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1); // 1x default
   const playbackIntervalRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -74,7 +75,7 @@ export default function EditorPage() {
           setIsPlaying(false);
           return prev;
         });
-      }, 800);
+      }, 800 / playbackSpeed);
     } else {
       clearInterval(playbackIntervalRef.current);
     }
@@ -89,6 +90,16 @@ export default function EditorPage() {
     }
   }, [stateList]);
 
+  useEffect(() => {
+    if (output.length > 0) {
+      const lastLineObj = output[output.length - 1];
+      const text = typeof lastLineObj === 'string' ? lastLineObj : (lastLineObj.text || "");
+      if (text.toLowerCase().includes('failed')) {
+        setIsRunnerVisible(true);
+      }
+    }
+  }, [output]);
+
   // Fix Monaco Editor scrolling/resize issues
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -98,26 +109,48 @@ export default function EditorPage() {
   }, [sidePanelWidth, bottomPanelHeight, isRunnerVisible, isVisualizerVisible, isAiAnalysisVisible]);
 
   // --- Handlers ---
-  // Language change removed (C++ only)
+
+  const handleInputSubmit = useCallback((input) => {
+    sendInput(input);
+    if (isVisualizerVisible) {
+      setIsRunnerVisible(false);
+    }
+  }, [sendInput, isVisualizerVisible]);
+
+  const lastInputFrameRef = useRef(-1);
+
+  // Auto-open terminal ONLY when visualizer hits an input step
+  useEffect(() => {
+    if (isVisualizerVisible && isRunning && stateList.length > 0) {
+      const lastFrameIdx = stateList.length - 1;
+      const lastFrame = stateList[lastFrameIdx];
+      
+      // Only open if it's an input event AND we haven't already auto-opened for this specific frame
+      if (lastFrame.event === 'input' && lastInputFrameRef.current !== lastFrameIdx) {
+        setIsRunnerVisible(true);
+        lastInputFrameRef.current = lastFrameIdx;
+      }
+    }
+    
+    // Reset ref when not running anymore
+    if (!isRunning) {
+      lastInputFrameRef.current = -1;
+    }
+  }, [stateList, isVisualizerVisible, isRunning]);
 
   const handleVisualize = useCallback(() => {
-    if (!isDesktop) {
-      setIsRunnerVisible(false);
-      setIsAiAnalysisVisible(false);
-    }
+    setIsRunnerVisible(false);
+    setIsAiAnalysisVisible(false);
     setIsVisualizerVisible(true);
-    executeCode(code, language, 'visualize');
-  }, [code, language, executeCode, isDesktop]);
+    visualizeCode(code, language);
+  }, [code, language, visualizeCode]);
 
   const handleRun = useCallback(() => {
-    if (!isDesktop) {
-      setIsVisualizerVisible(false);
-      setIsAiAnalysisVisible(false);
-    }
+    setIsVisualizerVisible(false);
+    setIsAiAnalysisVisible(false);
     setIsRunnerVisible(true);
-    if (clearOutput) clearOutput();
-    executeCode(code, language, 'run');
-  }, [code, language, executeCode, clearOutput, isDesktop]);
+    executeCode(code, language);
+  }, [code, language, executeCode]);
 
   const handleAiAnalysis = useCallback(() => {
     if (!isDesktop) {
@@ -244,11 +277,10 @@ export default function EditorPage() {
           }}
         >
           <div className="flex-grow w-full relative min-h-0 flex flex-col">
-            <div 
-              className={`w-full overflow-hidden transition-all duration-300 ${
-                !isDesktop && isRightPanelOpen ? 'h-0 hidden' : 
-                !isDesktop && isRunnerVisible ? 'h-[30%]' : 'h-full'
-              }`}
+            <div
+              className={`w-full overflow-hidden transition-all duration-300 ${!isDesktop && isRightPanelOpen ? 'h-0 hidden' :
+                  !isDesktop && isRunnerVisible ? 'h-[30%]' : 'h-full'
+                }`}
             >
               <EditorSection
                 code={code}
@@ -260,6 +292,9 @@ export default function EditorPage() {
             </div>
 
             <AnimatePresence>
+              {isRunnerVisible && isDesktop && (
+                <Resizer direction="vertical" onMouseDown={handleVerticalResize} />
+              )}
               {isRunnerVisible && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
@@ -271,7 +306,7 @@ export default function EditorPage() {
                   <RunnerSection
                     output={output}
                     isRunning={isRunning}
-                    onInput={sendInput}
+                    onInput={handleInputSubmit}
                     onShellCommand={executeShellCommand}
                     onClose={() => setIsRunnerVisible(false)}
                   />
@@ -311,6 +346,8 @@ export default function EditorPage() {
                       setCurrentStateIndex={setCurrentStateIndex}
                       isPlaying={isPlaying}
                       setIsPlaying={setIsPlaying}
+                      playbackSpeed={playbackSpeed}
+                      setPlaybackSpeed={setPlaybackSpeed}
                       onClose={() => setIsVisualizerVisible(false)}
                     />
                   </div>

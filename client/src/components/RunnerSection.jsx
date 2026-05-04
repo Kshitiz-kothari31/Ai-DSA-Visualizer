@@ -13,10 +13,9 @@ export default function RunnerSection({ output = [], isRunning, onInput, onShell
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
-            if (inputValue.trim() === '') return;
             if (isRunning) {
                 onInput(inputValue);
-            } else {
+            } else if (inputValue.trim() !== '') {
                 onShellCommand && onShellCommand(inputValue);
             }
             setInputValue('');
@@ -24,46 +23,76 @@ export default function RunnerSection({ output = [], isRunning, onInput, onShell
     };
 
     return (
-        <div className="h-full flex flex-col bg-black border-t border-[#1f1f1f] shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-            <div className="px-4 py-1.5 bg-[#0a0a0a] flex items-center justify-between border-b border-[#1f1f1f]">
+        <div className="h-full flex flex-col bg-[#0c0c0c] border-t border-[#1f1f1f] shadow-2xl font-mono">
+            {/* Terminal Header */}
+            <div className="px-4 py-1.5 bg-[#121212] flex items-center justify-between border-b border-[#1f1f1f]">
                 <div className="flex items-center space-x-2">
-                    <Terminal className="w-4 h-4 text-[#3b82f6]" />
-                    <span className="text-[11px] lg:text-[13px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Interactive Terminal</span>
+                    <Terminal className="w-3.5 h-3.5 text-sky-500" />
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.15em]">Terminal</span>
                     {isRunning && (
-                        <span className="text-sm text-[#3b82f6] font-bold animate-pulse ml-2">Running...</span>
+                        <div className="flex items-center gap-1.5 ml-4">
+                            <div className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
+                            <span className="text-[10px] text-sky-400 font-bold uppercase">Active</span>
+                        </div>
                     )}
                 </div>
-                <button onClick={onClose} className="p-1 hover:bg-[#1a1a1a] rounded text-gray-500 transition-colors">
+                <button onClick={onClose} className="p-1 hover:bg-zinc-800 rounded-md text-zinc-500 transition-all hover:text-zinc-200">
                     <X className="w-4 h-4" />
                 </button>
             </div>
+
+            {/* Terminal Content */}
             <div 
                 ref={scrollRef}
-                className="flex-grow p-4 lg:p-6 font-mono text-sm lg:text-base bg-black text-[#a1a1aa] selection:bg-[#3b82f6]/30 overflow-y-auto custom-scrollbar"
+                className="flex-grow p-4 lg:p-5 text-[13px] lg:text-[14px] bg-[#0c0c0c] text-zinc-300 selection:bg-sky-500/30 overflow-y-auto custom-scrollbar leading-relaxed"
             >
                 {output.length === 0 && !isRunning ? (
-                    <div className="text-gray-600 italic mb-2">Terminal ready. Type a command or run your code.</div>
+                    <div className="text-zinc-600 italic">KODA Terminal v1.0.0 - Ready for execution.</div>
                 ) : (
-                    output.map((line, i) => (
-                        <div key={i} className={`mb-1 ${line.startsWith('Error:') || line.includes('Process error') ? 'text-red-500 font-bold' : ''}`}>
-                            <span className="text-[#3b82f6] mr-2">›</span>
-                            {line}
-                        </div>
-                    ))
+                    output.map((line, i) => {
+                        const isLastLine = i === output.length - 1;
+                        if (!line && isLastLine && !isRunning) return null; // Hide trailing empty line if not running
+                        const safeLine = line.replace(/\r/g, '');
+                        const displayLine = safeLine === '' ? ' ' : safeLine;
+                        const isError = displayLine.toLowerCase().includes('error') || displayLine.includes('fault');
+                        const isSystem = displayLine.startsWith('System:');
+                        
+                        return (
+                            <div key={`term-line-${i}`} className={`whitespace-pre-wrap break-words ${isError ? 'text-rose-400 font-medium' : isSystem ? 'text-zinc-500 italic' : ''} min-h-[1.5em]`}>
+                                <span>{displayLine}</span>
+                                {isLastLine && isRunning && (
+                                    <input
+                                        type="text"
+                                        value={inputValue}
+                                        onChange={(e) => setInputValue(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        className="bg-transparent border-none outline-none text-zinc-100 placeholder-zinc-700 focus:ring-0 p-0 ml-1 inline-block min-w-[200px]"
+                                        placeholder=""
+                                        autoFocus
+                                    />
+                                )}
+                            </div>
+                        );
+                    })
                 )}
                 
-                <div className="mt-2 flex items-center space-x-2 text-[#3b82f6]">
-                    <ChevronRight className="w-4 h-4" />
-                    <input
-                        type="text"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        className="flex-grow bg-transparent border-none outline-none text-white placeholder-gray-600 focus:ring-0"
-                        placeholder={isRunning ? "Type input here and press Enter..." : "Type shell command (e.g. node script.js) and press Enter..."}
-                        autoFocus
-                    />
-                </div>
+                {/* Shell Command Input Area (only when NOT running) */}
+                {!isRunning && (
+                    <div className="mt-1 flex items-center gap-2 group">
+                        <span className="text-emerald-500 font-bold">KODA</span>
+                        <span className="text-zinc-500">~</span>
+                        <span className="text-sky-500 font-bold">$</span>
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="flex-grow bg-transparent border-none outline-none text-zinc-100 placeholder-zinc-700 focus:ring-0 p-0"
+                            placeholder=""
+                            autoFocus
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );
