@@ -62,6 +62,7 @@ export default function EditorPage() {
   const [bottomPanelHeight, setBottomPanelHeight] = useState(40); // Left bottom (Terminal)
   const [rightBottomHeight, setRightBottomHeight] = useState(50); // Right bottom (AI Analysis)
   const [isResizing, setIsResizing] = useState(false);
+  const [wasVisualizerActive, setWasVisualizerActive] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   // --- Logic & Effects ---
@@ -112,10 +113,14 @@ export default function EditorPage() {
 
   const handleInputSubmit = useCallback((input) => {
     sendInput(input);
-    if (isVisualizerVisible) {
+    if (isVisualizerVisible || wasVisualizerActive) {
       setIsRunnerVisible(false);
+      if (!isDesktop && wasVisualizerActive) {
+        setIsVisualizerVisible(true);
+        setWasVisualizerActive(false);
+      }
     }
-  }, [sendInput, isVisualizerVisible]);
+  }, [sendInput, isVisualizerVisible, wasVisualizerActive, isDesktop]);
 
   const lastInputFrameRef = useRef(-1);
 
@@ -127,6 +132,10 @@ export default function EditorPage() {
       
       // Only open if it's an input event AND we haven't already auto-opened for this specific frame
       if (lastFrame.event === 'input' && lastInputFrameRef.current !== lastFrameIdx) {
+        if (!isDesktop && isVisualizerVisible) {
+          setWasVisualizerActive(true);
+          setIsVisualizerVisible(false);
+        }
         setIsRunnerVisible(true);
         lastInputFrameRef.current = lastFrameIdx;
       }
@@ -135,8 +144,9 @@ export default function EditorPage() {
     // Reset ref when not running anymore
     if (!isRunning) {
       lastInputFrameRef.current = -1;
+      setWasVisualizerActive(false);
     }
-  }, [stateList, isVisualizerVisible, isRunning]);
+  }, [stateList, isVisualizerVisible, isRunning, isDesktop]);
 
   const handleVisualize = useCallback(() => {
     setIsRunnerVisible(false);
