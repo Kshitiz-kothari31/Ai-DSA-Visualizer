@@ -4,22 +4,18 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
-// Import Routes (We will create these next)
 const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
-// --- 1. Middleware ---
-// Allows us to receive JSON data in req.body
 app.use(express.json());
 
-// Allows us to parse cookies from the frontend
 app.use(cookieParser());
 
 app.use(cors({
     origin: function (origin, callback) {
         const allowedOrigins = ['http://localhost:5173', process.env.CLIENT_URL];
-        // Allow if it's localhost, the specific CLIENT_URL, or any Vercel preview link
+        
         if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
             callback(null, true);
         } else {
